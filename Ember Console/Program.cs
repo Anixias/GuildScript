@@ -43,7 +43,25 @@ void ShowPrompt()
 
 void CompileFile(string path)
 {
-	
+	var input = File.ReadAllText(path);
+	var parser = new Parser(input);
+
+	try
+	{
+		var tree = parser.Parse();
+		var treePrinter = new TreePrinter(Console.Out);
+		treePrinter.PrintTree(tree);
+
+		var evaluator = new Evaluator();
+		var value = evaluator.Evaluate(tree);
+			
+		if (value is not null)
+			Console.WriteLine($"= {value}");
+	}
+	catch (Exception e)
+	{
+		Console.WriteLine(e);
+	}
 }
 
 internal class Evaluator : Expression.IVisitor<object?>
