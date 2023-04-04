@@ -5,12 +5,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="234b6c86-8beb-4c3c-847c-415107905c28" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Console/TestProgram.gs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/GuildScript/Analysis/Syntax/Scanner.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/GuildScript/Analysis/Syntax/SyntaxToken.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.GuildScript/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.GuildScript/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Console/Console.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/Console/Console.csproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Console/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Console/Program.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
   </component>
   <component name="ProjectId" id="2NyfbGQibZL2m8qHZSDR3K0Uh9O" />
   <component name="ProjectLevelVcsManager">
@@ -36,7 +43,7 @@
     ]
   }
 }]]></component>
-  <component name="RunManager" selected=".NET Project.Launch File">
+  <component name="RunManager" selected=".NET Project.REPL">
     <configuration name="Launch File" type="DotNetProject" factoryName=".NET Project">
       <option name="EXE_PATH" value="$PROJECT_DIR$/Console/bin/Debug/net7.0/Console.exe" />
       <option name="PROGRAM_PARAMETERS" value="&quot;C:\Users\Anixias\Documents\Software Development\GuildScript\Console\TestProgram.gs&quot;" />
@@ -86,7 +93,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1680641314496</updated>
-      <workItem from="1680641315456" duration="444000" />
+      <workItem from="1680641315456" duration="2086000" />
     </task>
     <servers />
   </component>
@@ -94,6 +101,17 @@
     <option name="version" value="3" />
   </component>
   <component name="UnityUnitTestConfiguration" currentTestLauncher="NUnit" />
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
   </component>
