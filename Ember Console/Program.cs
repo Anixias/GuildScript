@@ -1,4 +1,5 @@
-﻿using GuildScript.Analysis.Syntax;
+﻿using EmberConsole;
+using GuildScript.Analysis.Syntax;
 
 if (args.Length == 0)
 {
@@ -24,8 +25,8 @@ void ShowPrompt()
 		try
 		{
 			var tree = parser.Parse();
-			
-			
+			var treePrinter = new TreePrinter(Console.Out);
+			treePrinter.PrintTree(tree);
 		}
 		catch (Exception e)
 		{
