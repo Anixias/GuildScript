@@ -85,6 +85,8 @@ public sealed class Scanner
 		}
 
 		type = SyntaxTokenType.IntegerLiteral;
+		if (int.TryParse(source.AsSpan(start, Length), out var intValue))
+			value = intValue;
 	}
 
 	private void ScanOperator(SyntaxTokenType operatorType, int characterCount = 1)
