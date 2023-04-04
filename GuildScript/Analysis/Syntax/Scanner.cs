@@ -58,6 +58,12 @@ public sealed class Scanner
 			case '/':
 				ScanOperator(SyntaxTokenType.Slash);
 				break;
+			case '(':
+				ScanOperator(SyntaxTokenType.OpenParen);
+				break;
+			case ')':
+				ScanOperator(SyntaxTokenType.CloseParen);
+				break;
 		}
 			
 		text = source.Substring(start, Length);

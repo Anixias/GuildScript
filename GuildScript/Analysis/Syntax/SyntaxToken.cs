@@ -11,6 +11,8 @@ public enum SyntaxTokenType
 	Minus,
 	Star,
 	Slash,
+	OpenParen,
+	CloseParen,
 	
 	// Literals
 	IntegerLiteral

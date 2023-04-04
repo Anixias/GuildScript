@@ -32,6 +32,26 @@ public sealed class Parser
 		return token;
 	}
 
+	private void Consume(SyntaxTokenType type)
+	{
+		if (!Match(type))
+			throw new Exception($"Expected '{type}'.");
+	}
+
+	private bool Match(params SyntaxTokenType[] types)
+	{
+		foreach (var type in types)
+		{
+			if (Next.Type != type)
+				continue;
+			
+			Advance();
+			return true;
+		}
+
+		return false;
+	}
+
 	private bool Match([NotNullWhen(true)] out SyntaxToken? token, params SyntaxTokenType[] types)
 	{
 		token = null;
@@ -109,7 +129,6 @@ public sealed class Parser
 		
 		var operand = ParseUnary();
 		return new UnaryExpression(operand, operatorToken);
-
 	}
 
 	private Expression ParsePrimary()
@@ -119,6 +138,12 @@ public sealed class Parser
 			return new LiteralExpression(intToken);
 		}
 
-		throw new Exception("Expected expression.");
+		if (!Match(SyntaxTokenType.OpenParen))
+			throw new Exception("Expected expression.");
+		
+		var expression = ParseExpression();
+		Consume(SyntaxTokenType.CloseParen);
+
+		return expression;
 	}
 }
