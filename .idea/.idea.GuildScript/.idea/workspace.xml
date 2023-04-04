@@ -5,16 +5,25 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="234b6c86-8beb-4c3c-847c-415107905c28" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/GuildScript/Analysis/Syntax/Scanner.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/GuildScript/Analysis/Syntax/SyntaxToken.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Ember Console/TreePrinter.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/GuildScript/Analysis/Syntax/Expression.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/GuildScript/Analysis/Syntax/Parser.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/GuildScript/Analysis/Syntax/SyntaxNode.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/GuildScript/Analysis/Syntax/SyntaxTree.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.GuildScript/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.GuildScript/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Console/Console.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/Console/Console.csproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Console/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Console/Program.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Console/Console.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/Ember Console/Ember Console.csproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Console/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Ember Console/Program.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Console/TestProgram.gs" beforeDir="false" afterPath="$PROJECT_DIR$/Ember Console/TestProgram.gs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GuildScript.sln" beforeDir="false" afterPath="$PROJECT_DIR$/GuildScript.sln" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/Ember Console/Program.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Ember Console/TreePrinter.cs" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -52,7 +61,7 @@
       <option name="USE_EXTERNAL_CONSOLE" value="0" />
       <option name="USE_MONO" value="0" />
       <option name="RUNTIME_ARGUMENTS" value="" />
-      <option name="PROJECT_PATH" value="$PROJECT_DIR$/Console/Console.csproj" />
+      <option name="PROJECT_PATH" value="$PROJECT_DIR$/Ember Console/Ember Console.csproj" />
       <option name="PROJECT_EXE_PATH_TRACKING" value="1" />
       <option name="PROJECT_ARGUMENTS_TRACKING" value="1" />
       <option name="PROJECT_WORKING_DIRECTORY_TRACKING" value="1" />
@@ -70,7 +79,7 @@
       <option name="USE_EXTERNAL_CONSOLE" value="0" />
       <option name="USE_MONO" value="0" />
       <option name="RUNTIME_ARGUMENTS" value="" />
-      <option name="PROJECT_PATH" value="$PROJECT_DIR$/Console/Console.csproj" />
+      <option name="PROJECT_PATH" value="$PROJECT_DIR$/Ember Console/Ember Console.csproj" />
       <option name="PROJECT_EXE_PATH_TRACKING" value="1" />
       <option name="PROJECT_ARGUMENTS_TRACKING" value="1" />
       <option name="PROJECT_WORKING_DIRECTORY_TRACKING" value="1" />
@@ -93,7 +102,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1680641314496</updated>
-      <workItem from="1680641315456" duration="2086000" />
+      <workItem from="1680641315456" duration="3961000" />
     </task>
     <servers />
   </component>

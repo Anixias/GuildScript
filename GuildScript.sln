@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Console", "Console\Console.csproj", "{A36378AC-24C6-4F4E-AFF7-4A6C4AA559F0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ember Console", "Ember Console\Ember Console.csproj", "{A36378AC-24C6-4F4E-AFF7-4A6C4AA559F0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GuildScript", "GuildScript\GuildScript.csproj", "{E0CC15E9-358A-4665-BF4E-1D69D0EF52EF}"
 EndProject

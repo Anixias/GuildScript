@@ -19,14 +19,18 @@ void ShowPrompt()
 		if (string.IsNullOrWhiteSpace(input))
 			break;
 
-		var scanner = new Scanner(input);
-		SyntaxToken token;
+		var parser = new Parser(input);
 
-		do
+		try
 		{
-			token = scanner.ScanToken();
-			Console.WriteLine($"{token.Type}: {token.Text}");
-		} while (token.Type != SyntaxTokenType.EndOfFile);
+			var tree = parser.Parse();
+			
+			
+		}
+		catch (Exception e)
+		{
+			Console.WriteLine(e);
+		}
 	}
 }
 
