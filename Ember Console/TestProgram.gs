@@ -14,7 +14,7 @@
 // template = abstract
 // final = sealed
 
-// Member modifiers
+// Field modifiers
 // shared = static
 
 // Method/property modifiers
@@ -59,14 +59,14 @@ var list = new List<string>
 
 var index = list.FindIndex([item] <| item == "hello");
 
-[TParameter] <| TResult lambda = [parameter] <| expression;
-[TParameter] <| TResult lambda = [parameter] <|
+[TParameter] <| TResult lambda = [TParameter parameter] <| expression;
+[TParameter] <| TResult lambda = [TParameter parameter] <|
 {
 	return expression;
 }
 
-[TParameter] |> lambda = [parameter] |> statement;
-[TParameter] |> lambda = [parameter] |>
+[TParameter] |> lambda = [TParameter parameter] |> statement;
+[TParameter] |> lambda = [TParameter parameter] |>
 {
 	statement;
 }
