@@ -1,6 +1,7 @@
-﻿using GuildScript.Analysis.Text;
+﻿using GuildScript.Analysis.Syntax;
+using GuildScript.Analysis.Text;
 
-namespace GuildScript.Analysis.Syntax;
+namespace GuildScript.Analysis;
 
 public sealed class Scanner
 {

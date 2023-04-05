@@ -1,7 +1,7 @@
 using System.Collections;
-using GuildScript.Analysis.Text;
+using GuildScript.Analysis.Syntax;
 
-namespace GuildScript.Analysis.Syntax;
+namespace GuildScript.Analysis.Text;
 
 public class DiagnosticCollection : IEnumerable<Diagnostic>, IEnumerable
 {

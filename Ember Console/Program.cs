@@ -1,4 +1,5 @@
 ﻿using EmberConsole;
+using GuildScript.Analysis;
 using GuildScript.Analysis.Syntax;
 
 if (args.Length == 0)

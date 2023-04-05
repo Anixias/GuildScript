@@ -1,6 +1,4 @@
-using GuildScript.Analysis.Text;
-
-namespace GuildScript.Analysis.Syntax;
+namespace GuildScript.Analysis.Text;
 
 public class Diagnostic
 {

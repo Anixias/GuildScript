@@ -1,7 +1,9 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using GuildScript.Analysis.Syntax;
+using GuildScript.Analysis.Text;
 
-namespace GuildScript.Analysis.Syntax;
+namespace GuildScript.Analysis;
 
 public sealed class Parser
 {
@@ -101,29 +103,27 @@ public sealed class Parser
 
 	private Expression ParseExpression()
 	{
-		return ParseTerm();
+		return ParseBinaryExpression();
 	}
 
-	private Expression ParseTerm()
-	{
-		var left = ParseFactor();
-
-		while (Match(out var operatorToken, SyntaxTokenType.Plus, SyntaxTokenType.Minus))
-		{
-			var right = ParseFactor();
-			left = new BinaryExpression(left, operatorToken, right);
-		}
-
-		return left;
-	}
-
-	private Expression ParseFactor()
+	private Expression ParseBinaryExpression(int parentPrecedence = -1)
 	{
 		var left = ParseUnary();
 
-		while (Match(out var operatorToken, SyntaxTokenType.Star, SyntaxTokenType.Slash))
+		while (true)
 		{
-			var right = ParseUnary();
+			var precedence = Next.Type.GetBinaryOperatorPrecedence();
+			var endParse = Next.Type.GetBinaryOperatorAssociativity() switch
+			{
+				< 0 => precedence <= parentPrecedence,
+				_   => precedence < parentPrecedence
+			};
+			
+			if (precedence < 0 || endParse)
+				break;
+
+			var operatorToken = Advance();
+			var right = ParseBinaryExpression(precedence);
 			left = new BinaryExpression(left, operatorToken, right);
 		}
 

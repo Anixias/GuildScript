@@ -13,6 +13,7 @@ public enum SyntaxTokenType
 	Minus,
 	Star,
 	Slash,
+	Hat,
 	OpenParen,
 	CloseParen,
 	
