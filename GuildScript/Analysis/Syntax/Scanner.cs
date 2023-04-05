@@ -1,10 +1,15 @@
-﻿namespace GuildScript.Analysis.Syntax;
+﻿using GuildScript.Analysis.Text;
+
+namespace GuildScript.Analysis.Syntax;
 
 public sealed class Scanner
 {
+	public DiagnosticCollection Diagnostics { get; }
+	
 	private bool EndOfFile => position >= source.Length;
 	private char Current => position < 0 || EndOfFile ? '\0' : source[position];
 	private int Length => position - start;
+	private TextSpan Span => new(start, Length);
 
 	private int start;
 	private SyntaxTokenType type;
@@ -15,6 +20,7 @@ public sealed class Scanner
 
 	public Scanner(string source)
 	{
+		Diagnostics = new DiagnosticCollection();
 		this.source = source;
 	}
 
@@ -30,7 +36,7 @@ public sealed class Scanner
 	{
 		if (EndOfFile)
 		{
-			return new SyntaxToken(SyntaxTokenType.EndOfFile, "\0", position, null);
+			return new SyntaxToken(SyntaxTokenType.EndOfFile, "\0", null, new TextSpan(position, 0));
 		}
 
 		if (char.IsWhiteSpace(Current))
@@ -70,7 +76,7 @@ public sealed class Scanner
 		}
 			
 		text = source.Substring(start, Length);
-		return new SyntaxToken(type, text, position, value);
+		return new SyntaxToken(type, text, value, Span);
 	}
 
 	private void SkipWhiteSpace()
@@ -88,8 +94,11 @@ public sealed class Scanner
 
 	private void ScanInvalidCharacter()
 	{
+		var invalidCharacter = Current;
 		Advance();
 		type = SyntaxTokenType.Invalid;
+
+		Diagnostics.ReportScannerInvalidCharacter(new TextSpan(start, Length), invalidCharacter);
 	}
 
 	private void ScanNumber()

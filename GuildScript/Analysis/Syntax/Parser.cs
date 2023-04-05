@@ -5,6 +5,8 @@ namespace GuildScript.Analysis.Syntax;
 
 public sealed class Parser
 {
+	public DiagnosticCollection Diagnostics { get; }
+	
 	private SyntaxToken Next => Peek();
 
 	private readonly ImmutableArray<SyntaxToken> tokens;
@@ -12,12 +14,18 @@ public sealed class Parser
 
 	public Parser(string source)
 	{
+		Diagnostics = new DiagnosticCollection();
 		var scanner = new Scanner(source);
 		tokens = ParseTokens(scanner);
+
+		Diagnostics.AppendDiagnostics(scanner.Diagnostics);
 	}
 
-	public SyntaxTree Parse()
+	public SyntaxTree? Parse()
 	{
+		if (Diagnostics.Any())
+			return null;
+		
 		var expression = ParseExpression();
 		return new SyntaxTree(expression);
 	}
@@ -139,7 +147,11 @@ public sealed class Parser
 		}
 
 		if (!Match(SyntaxTokenType.OpenParen))
-			throw new Exception("Expected expression.");
+		{
+			var token = Advance();
+			Diagnostics.ReportParserExpectedExpression(token.Span, token);
+			return new LiteralExpression(token);
+		}
 		
 		var expression = ParseExpression();
 		Consume(SyntaxTokenType.CloseParen);

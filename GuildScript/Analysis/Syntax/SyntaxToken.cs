@@ -1,4 +1,6 @@
-﻿namespace GuildScript.Analysis.Syntax;
+﻿using GuildScript.Analysis.Text;
+
+namespace GuildScript.Analysis.Syntax;
 
 public enum SyntaxTokenType
 {
@@ -22,14 +24,14 @@ public sealed class SyntaxToken
 {
 	public SyntaxTokenType Type { get; }
 	public string Text { get; }
-	public int Position { get; }
 	public object? Value { get; }
+	public TextSpan Span { get; }
 
-	public SyntaxToken(SyntaxTokenType type, string text, int position, object? value)
+	public SyntaxToken(SyntaxTokenType type, string text, object? value, TextSpan span)
 	{
 		Type = type;
 		Text = text;
-		Position = position;
 		Value = value;
+		Span = span;
 	}
 }

@@ -25,14 +25,28 @@ void ShowPrompt()
 		try
 		{
 			var tree = parser.Parse();
-			var treePrinter = new TreePrinter(Console.Out);
-			treePrinter.PrintTree(tree);
+			if (parser.Diagnostics.Any() || tree is null)
+			{
+				Console.ForegroundColor = ConsoleColor.DarkRed;
 
-			var evaluator = new Evaluator();
-			var value = evaluator.Evaluate(tree);
+				foreach (var diagnostic in parser.Diagnostics)
+				{
+					Console.WriteLine(diagnostic);
+				}
+				
+				Console.ResetColor();
+			}
+			else
+			{
+				var treePrinter = new TreePrinter(Console.Out);
+				treePrinter.PrintTree(tree);
+
+				var evaluator = new Evaluator();
+				var value = evaluator.Evaluate(tree);
 			
-			if (value is not null)
-				Console.WriteLine($"= {value}");
+				if (value is not null)
+					Console.WriteLine($"= {value}");
+			}
 		}
 		catch (Exception e)
 		{
@@ -49,14 +63,29 @@ void CompileFile(string path)
 	try
 	{
 		var tree = parser.Parse();
-		var treePrinter = new TreePrinter(Console.Out);
-		treePrinter.PrintTree(tree);
+		
+		if (parser.Diagnostics.Any() || tree is null)
+		{
+			Console.ForegroundColor = ConsoleColor.DarkRed;
 
-		var evaluator = new Evaluator();
-		var value = evaluator.Evaluate(tree);
+			foreach (var diagnostic in parser.Diagnostics)
+			{
+				Console.WriteLine(diagnostic);
+			}
+				
+			Console.ResetColor();
+		}
+		else
+		{
+			var treePrinter = new TreePrinter(Console.Out);
+			treePrinter.PrintTree(tree);
+
+			var evaluator = new Evaluator();
+			var value = evaluator.Evaluate(tree);
 			
-		if (value is not null)
-			Console.WriteLine($"= {value}");
+			if (value is not null)
+				Console.WriteLine($"= {value}");
+		}
 	}
 	catch (Exception e)
 	{
