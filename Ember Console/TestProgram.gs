@@ -1,4 +1,8 @@
-﻿// Access modifiers
+﻿// Namespaces
+// module = namespace
+// using
+
+// Access modifiers
 // public
 // private
 // protected
@@ -16,6 +20,10 @@
 // Method/property modifiers
 // prototype = virtual
 // required = abstract
+
+using module System;
+
+module TestProgram;
 
 public template class Entity
 {
