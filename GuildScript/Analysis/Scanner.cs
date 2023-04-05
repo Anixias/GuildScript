@@ -65,6 +65,9 @@ public sealed class Scanner
 			case '/':
 				ScanOperator(SyntaxTokenType.Slash);
 				break;
+			case '^':
+				ScanOperator(SyntaxTokenType.Hat);
+				break;
 			case '(':
 				ScanOperator(SyntaxTokenType.OpenParen);
 				break;

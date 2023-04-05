@@ -119,6 +119,7 @@ internal class Evaluator : Expression.IVisitor<object?>
 				SyntaxTokenType.Minus => leftValue - rightValue,
 				SyntaxTokenType.Star  => leftValue * rightValue,
 				SyntaxTokenType.Slash => leftValue / rightValue,
+				SyntaxTokenType.Hat => (int)Math.Pow(leftValue, rightValue),
 				_                     => null
 			},
 			_ => null
