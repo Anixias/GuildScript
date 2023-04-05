@@ -64,6 +64,9 @@ public sealed class Scanner
 			case ')':
 				ScanOperator(SyntaxTokenType.CloseParen);
 				break;
+			default:
+				ScanInvalidCharacter();
+				break;
 		}
 			
 		text = source.Substring(start, Length);
@@ -81,6 +84,12 @@ public sealed class Scanner
 	private void Advance()
 	{
 		position++;
+	}
+
+	private void ScanInvalidCharacter()
+	{
+		Advance();
+		type = SyntaxTokenType.Invalid;
 	}
 
 	private void ScanNumber()
