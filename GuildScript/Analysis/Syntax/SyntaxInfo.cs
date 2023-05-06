@@ -6,7 +6,7 @@ public static class SyntaxInfo
 	{
 		new[] { SyntaxTokenType.Plus, SyntaxTokenType.Minus },
 		new[] { SyntaxTokenType.Star, SyntaxTokenType.Slash },
-		new[] { SyntaxTokenType.Hat }
+		new[] { SyntaxTokenType.StarStar }
 	};
 
 	public static int GetBinaryOperatorPrecedence(this SyntaxTokenType type)
@@ -27,7 +27,7 @@ public static class SyntaxInfo
 	{
 		return operatorType switch
 		{
-			SyntaxTokenType.Hat => 1,
+			SyntaxTokenType.Caret => 1,
 			_                   => -1
 		};
 	}

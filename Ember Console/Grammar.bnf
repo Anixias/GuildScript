@@ -1,0 +1,136 @@
+<program>						-> <import-statement>* <module-statement> <top-level-statement>*
+<import-statement>				-> "import" <module> ";"
+<module-statement>				-> "module" <module> ";"
+<top-level-statement>			-> <entry-point> | <module-declaration> | <type-declaration> | <define-statement>
+
+<module-declaration> 			-> "module" <identifier> "{" <module-member>* "}"
+<module-member> 				-> <module-declaration> | <type-declaration>
+
+<module>						-> <identifier> ("." <identifier>)* 
+<type-declaration>				-> <class-declaration> | <struct-declaration> | <interface-declaration> | <enum-declaration>
+<define-statement>				-> "define" <type> "as" <identifier> ";"
+<entry-point>					-> "entry" <type> <identifier> "(" <parameter-list> ")" <block>
+<identifier>					-> [a-zA-Z_] ([a-zA-Z0-9_])*
+
+<class-declaration>				-> <access-modifier>? <class-modifier>* "class" <identifier> <template-params>? <inheritance>? "{" <member>* "}"
+<struct-declaration>			-> <access-modifier>? <struct-modifier>* "struct" <identifier> "{" <member>* "}"
+<interface-declaration>			-> <access-modifier>? "interface" <identifier> "{" <interface-member>* "}"
+<enum-declaration>				-> <access-modifier>? "enum" <identifier> "{" <enum-list>? "}"
+<parameter-list>				-> <parameter> ("," <parameter>)*
+<block>							-> "{" <statement>* "}"
+<indexer-declaration> 			-> <access-modifier>? <type> "this" "[" <parameter-list> "]" "{" <property-accessor>* "}"
+
+<parameter>						-> <type> <identifier>
+<access-modifier>				-> "public" | "private" | "protected" | "internal" | "external"
+<class-modifier>				-> "global" | "template" | "final"
+<inheritance>					-> ":" <qualifier-name> ("," <qualifier-name>)*
+<struct-modifier>				-> "immutable"
+<member>						-> <field-declaration> | <method-declaration> | <property-declaration> | <constructor-declaration> | <destructor-declaration> | <indexer-declaration> | <type-declaration>
+<interface-member>				-> <method-signature> | <property-signature>
+<enum-list>						-> <enum-member> ("," <enum-member>)* ","?
+<enum-member>					-> <identifier> ("=" <expression>)?
+<type>							-> <named-type> | <lambda-type> | <nullable-type>
+<nullable-type> 				-> <named-type> "?"
+<named-type>					-> <type-name> ("." <type-name>)* ("[" <expression>? "]")?
+<lambda-type>					-> "[" <type> ("," <type>)* "]" ("<|" "[" <type> "]" | "|>")
+<type-name>						-> <base-type> | <identifier> <template-args>?
+<statement>						-> <block>
+								|  <local-var-declaration> ";"
+								|  <control-statement>
+								|  <loop-statement>
+								|  <return-statement> ";"
+								|  <expression> ";"
+								|  <throw-statement> ";"
+								|  <try-catch>
+           						|  <lock-statement>
+
+<lock-statement> 				-> "lock" "(" <expression> ")" <statement>
+<field-declaration>				-> <access-modifier>? <field-modifier>* <type> <identifier> ("=" <expression>)? ";"
+<method-declaration>			-> <access-modifier>? <async-modifier>? <method-modifier>* <type> <identifier> <template-params>? "(" <parameter-list>? ")" <block>
+<property-declaration>			-> <access-modifier>? <method-modifier>* <type> <identifier> "{" <property-accessor>* "}"
+<constructor-declaration>		-> <access-modifier>? "constructor" "(" <parameter-list>? ")" <constructor-initializer>? <block>
+<destructor-declaration>		-> "destructor" "(" ")" <block>
+<method-signature>				-> <method-modifier>? <type> <identifier> <template-params>? "(" <parameter-list>? ")" ";"
+<property-signature>			-> <method-modifier>? <type> <identifier> "{" <property-accessor-signature>* "}"
+<base-type>						-> <int-type> | <real-type> | "char" | "string" | "bool" | "void" | "object"
+<local-var-declaration>			-> (<type> | "var") <identifier> ("=" <expression>)?
+
+<async-modifier> 				-> "async"
+<await-expression> 				-> "await" <expression>
+								
+<expression>					-> <assignment-expression> | <lambda-expression> | <await-expression>
+<assignment-expression>			-> <conditional-expression> (("="
+															| "+="
+															| "-="
+															| "*="
+															| "/="
+															| "**="
+															| "%="
+															| "&="
+															| "|="
+															| "^="
+															| "<<="
+															| ">>="
+															| "<<<="
+															| ">>>="
+															| "??=") <expression>)?
+<conditional-expression>		-> <null-coalescing-expression> ("?" <expression> ":" <expression>)?
+<null-coalescing-expression>	-> <conditional-or-expression> ("??" <conditional-or-expression>)*
+<conditional-or-expression>		-> <conditional-and-expression> ("||" <conditional-and-expression>)*
+<conditional-and-expression>	-> <bitwise-or-expression> ("&&" <bitwise-or-expression>)*
+<bitwise-or-expression>			-> <bitwise-xor-expression> ("|" <bitwise-xor-expression>)*
+<bitwise-xor-expression>		-> <bitwise-and-expression> ("^" <bitwise-and-expression>)*
+<bitwise-and-expression>		-> <equality-expression> ("&" <equality-expression>)*
+<equality-expression>			-> <relational-expression> (("==" | "!=") <relational-expression>)*
+<relational-expression>			-> <shift-expression> (("<" | ">" | "<=" | ">=" | "?=" | "?:") <shift-expression>)*
+<shift-expression>				-> <additive-expression> (("<<" | ">>" | "<<<" | ">>>") <additive-expression>)*
+<additive-expression>			-> <multiplicative-expression> (("+" | "-") <multiplicative-expression>)*
+<multiplicative-expression>		-> <exponent-expression> (("*" | "/" | "%") <exponent-expression>)*
+<exponent-expression>			-> <range-expression> ("**" <range-expression>)*
+<range-expression>				-> <unary-expression> (("->" | "<-" | "->>" | "<<-") <unary-expression>)*
+<unary-expression>				-> ("+" | "-" | "!" | "~" | "++" | "--")? <primary-expression>
+<primary-expression>			-> <literal> | <parenthesized-expression> | <instantiate-expression> | <initializer-expression>
+								| <qualifier>  ( "." <identifier>
+											   | ":" <type>
+											   | <template-args>? "(" <argument-list> ")"
+											   | "?." <identifier>
+											   | "[" <expression> "]"
+											   | "?[" <expression> "]"
+											   | "++" | "--" 
+											   | "!")*
+
+								
+<control-statement>				-> <if-statement> <else-statement>?
+<loop-statement>				-> <while-loop> | <do-while-loop> | <for-loop> | <foreach-loop> | <repeat-loop>
+<return-statement>				-> "return" <expression>?
+<throw-statement>				-> "throw" <expression>?
+<try-catch>						-> "try" <statement> (<catch-statement statement>)? ("finally" <statement>)?
+<constructor-initializer>		-> ":" ("base" | "this") "(" <argument-list>? ")"
+<field-modifier>				-> "constant" | "global" | "fixed" | "immutable" | "final"
+<method-modifier>				-> "global" | "prototype" | "required" | "immutable"
+<int-type>						-> "int" | "uint" | "byte" | "sbyte" | "short" | "ushort" | "long" | "ulong"
+<real-type>						-> "single" | "double"
+<property-accessor>				-> <access-modifier>? ("get" | "set" | <lambda-expression>) ";"
+<property-accessor-signature>	-> ("get" | "set" | <lambda-expression>) ";"
+<if-statement>					-> "if" "(" <expression> ")" <statement>
+<else-statement>				-> "else" <statement>
+<while-loop>					-> "while" "(" <expression> ")" <statement>
+<do-while-loop>					-> "do" <statement> "while" "(" <expression> ")" ";"
+<for-loop>						-> "for" "(" <expression>? ";" <expression>? ";" <expression> ")" <statement>
+<foreach-loop>					-> "foreach" "(" <type> <identifier> "in" <expression> ")" <statement>
+<repeat-loop>					-> "repeat" "(" <expression> ")" <statement>
+<literal>						-> <integer-literal> | <real-literal> | <string-literal> | <char-literal> | "true" | "false" | "null" | "this" | "base"
+<instantiate-expression>		-> "new" <type>? "(" <argument-list> ")"
+<initializer-expression>		-> "new" <type>? ("(" <argument-list> ")")? <initializer>
+<initializer>					-> "{" <expression> ("," <expression>)* ","? "}"
+<lambda-expression>				-> "[" <parameter-list> "]" ("<|" (<expression> | <block>) | "|>" <statement>)
+<parenthesized-expression>		-> "(" <expression> ")"
+<catch-statement>				-> "catch" "(" (<type> <identifier>)? ")"
+<argument-list>					-> <expression> ("," <expression>)*
+<integer-literal>				-> [0-9]+ ("u" | "U")? ("b" | "B" | "s" | "S" | "l" | "L")?
+<real-literal>					-> [0-9]+ "." [0-9]+
+<string-literal>				-> '"' .* '"'
+<char-literal>					-> "'" .* "'"
+<qualifier>						-> <base-type> | <identifier>
+<template-params>				-> "<" <identifier> ("," <identifier>)* ">"
+<template-args>					-> "<" <qualifier> ("," <qualifier>)* ">"

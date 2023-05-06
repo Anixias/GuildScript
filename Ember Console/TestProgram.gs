@@ -1,84 +1,105 @@
-﻿// Namespaces
-// module = namespace
-// using
+import System.Console;
 
-// Access modifiers
-// public
-// private
-// protected
-// internal
-// external
+module Adventure;
 
-// Class modifiers
-// unique = static
-// template = abstract
-// final = sealed
-
-// Field modifiers
-// shared = static
-
-// Method/property modifiers
-// prototype = virtual
-// required = abstract
-
-using module System;
-
-module TestProgram;
-
-public template class Entity
+class Room
 {
-	public required string FilePath <|;
-	public double Health <>;
-	public prototype string Name
+	public string Name { get; set; }
+	public string Description { get; set; }
+	public RoomType Type { get; set; }
+	
+	public enum int RoomType
 	{
-		<|;
-		private |>;
-		[char input] |> input<string>;
+		Trap,
+		Treasure,
+		Boss,
+		Normal,
 	}
 }
 
-public final class List<T>
+class Player
 {
-	public int FindIndex([T] <| bool match)
+	class Nested
 	{
-		for (var item in items)
+	}
+	
+	public string Name { get; private set; }
+	private Room currentRoom;
+	public Room.RoomType favoriteRoom;
+	
+	public void MoveTo(Room room)
+	{
+		currentRoom = room;
+		Console.WriteLine("You moved to: " + room.Name);
+		Console.WriteLine(room.Description);
+	}
+}
+
+entry int Main()
+{
+	// Create rooms
+	Room room1 = new Room
+	{
+		Name = "Living Room",
+		Description = "You are in the living room. There is a door to the north."
+	};
+
+	Room room2 = new Room
+	{
+		Name = "Kitchen",
+		Description = "You are in the kitchen. There is a door to the south."
+	};
+
+	// Create player
+	Player player = new Player
+	{
+		Name = "John",
+		CurrentRoom = room1
+	};
+
+	Console.WriteLine("Welcome to the text adventure game, " + player.Name + "!");
+
+	var playing = true;
+	while (playing)
+	{
+		Console.Write("Enter command: ");
+		var command = Console.ReadLine();
+
+		switch (command)
 		{
-			if (match(item))
-				return iteration;
+			case ("north")
+			{
+				if (player.CurrentRoom == room1)
+				{
+					player.MoveTo(room2);
+				}
+				else
+				{
+					Console.WriteLine("You cannot go north.");
+				}
+			}
+			case ("south")
+			{
+				if (player.CurrentRoom == room2)
+				{
+					player.MoveTo(room1);
+				}
+				else
+				{
+					Console.WriteLine("You cannot go south.");
+				}
+			}
+			case ("quit")
+			{
+				playing = false;
+				Console.WriteLine("Goodbye!");
+			}
+			default
+			{
+				Console.WriteLine("Invalid command.");
+			}
 		}
-		
-		return -1;
 	}
-}
 
-var list = new List<string>
-{
-	"hello",
-	"world"
-};
-
-var index = list.FindIndex([item] <| item == "hello");
-
-[TParameter] <| TResult lambda = [TParameter parameter] <| expression;
-[TParameter] <| TResult lambda = [TParameter parameter] <|
-{
-	return expression;
-}
-
-[TParameter] |> lambda = [TParameter parameter] |> statement;
-[TParameter] |> lambda = [TParameter parameter] |>
-{
-	statement;
-}
-
-[] <| TResult lambda = [] <| expression;
-[] <| TResult lambda = [] <|
-{
-	return expression;
-}
-
-[] |> lambda = [] |> statement;
-[] |> lambda = [] |>
-{
-	statement;
+	return 0;
 }

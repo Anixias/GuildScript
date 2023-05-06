@@ -1,14 +1,58 @@
 ﻿using EmberConsole;
 using GuildScript.Analysis;
+using GuildScript.Analysis.Semantics;
 using GuildScript.Analysis.Syntax;
 
 if (args.Length == 0)
 {
 	ShowPrompt();
+	return;
 }
-else
+
+var position = 0;
+var arguments = new Dictionary<string, Action>
 {
-	CompileFile(args[0]);
+	{ "-in", ArgumentIn },
+	{ "-out", ArgumentOut }
+};
+
+string ReadArgument()
+{
+	return args[position++];
+}
+
+bool IsValidFilename(string path)
+{
+	return !string.IsNullOrWhiteSpace(path) && path.IndexOfAny(Path.GetInvalidPathChars()) < 0;
+}
+
+string? inputPath = null;
+void ArgumentIn()
+{
+	inputPath = ReadArgument();
+}
+
+string? outputPath = null;
+void ArgumentOut()
+{
+	outputPath = ReadArgument();
+
+	if (!IsValidFilename(outputPath))
+		throw new Exception("Invalid output path.");
+
+	if (Path.GetExtension(outputPath) != ".gsx")
+		throw new Exception("Output file extension must be \"*.gsx\".");
+}
+
+try
+{
+	ExecuteCommand();
+}
+catch (Exception e)
+{
+	Console.ForegroundColor = ConsoleColor.DarkRed;
+	Console.WriteLine(e.Message);
+	Console.ResetColor();
 }
 
 void ShowPrompt()
@@ -39,14 +83,14 @@ void ShowPrompt()
 			}
 			else
 			{
-				var treePrinter = new TreePrinter(Console.Out);
-				treePrinter.PrintTree(tree);
+				//var treePrinter = new TreePrinter(Console.Out);
+				//treePrinter.PrintTree(tree);
 
-				var evaluator = new Evaluator();
-				var value = evaluator.Evaluate(tree);
+				//var evaluator = new Evaluator();
+				//var value = evaluator.Evaluate(tree);
 			
-				if (value is not null)
-					Console.WriteLine($"= {value}");
+				//if (value is not null)
+				//	Console.WriteLine($"= {value}");
 			}
 		}
 		catch (Exception e)
@@ -56,10 +100,11 @@ void ShowPrompt()
 	}
 }
 
-void CompileFile(string path)
+SyntaxTree? AnalyzeFile(string path, SemanticModel semanticModel)
 {
 	var input = File.ReadAllText(path);
 	var parser = new Parser(input);
+	var collector = new Collector(semanticModel);
 
 	try
 	{
@@ -75,25 +120,94 @@ void CompileFile(string path)
 			}
 				
 			Console.ResetColor();
+			return null;
 		}
-		else
-		{
-			var treePrinter = new TreePrinter(Console.Out);
-			treePrinter.PrintTree(tree);
 
-			var evaluator = new Evaluator();
-			var value = evaluator.Evaluate(tree);
-			
-			if (value is not null)
-				Console.WriteLine($"= {value}");
+		var treePrinter = new TreePrinter(Console.Out);
+		treePrinter.PrintTree(tree);
+
+		collector.CollectSymbols(tree);
+		if (!collector.Diagnostics.Any())
+			return tree;
+		
+		Console.ForegroundColor = ConsoleColor.DarkRed;
+
+		foreach (var diagnostic in collector.Diagnostics)
+		{
+			Console.WriteLine(diagnostic);
 		}
+			
+		Console.ResetColor();
+		return null;
+
+		//nameResolver.AppendDiagnostics(parser.Diagnostics);
+		//nameResolver.Resolve(tree.Root);
+
+		//if (nameResolver.Diagnostics.Any())
+		//	return;
+
+		//var evaluator = new Evaluator();
+		//var value = evaluator.Evaluate(tree);
+
+		//if (value is not null)
+		//	Console.WriteLine($"= {value}");
 	}
 	catch (Exception e)
 	{
+		Console.ForegroundColor = ConsoleColor.DarkRed;
 		Console.WriteLine(e);
+		Console.ResetColor();
+		return null;
 	}
 }
 
+void LinkTree(SyntaxTree tree, SemanticModel semanticModel)
+{
+	var nameResolver = new NameResolver(semanticModel);
+	nameResolver.Resolve(tree.Root);
+}
+
+void CompileFolder()
+{
+	var files = Directory.GetFiles(inputPath, "*.gs", SearchOption.AllDirectories);
+	var semanticModel = new SemanticModel();
+
+	var trees = new List<SyntaxTree>();
+	
+	foreach (var file in files)
+	{
+		if (AnalyzeFile(file, semanticModel) is { } tree)
+			trees.Add(tree);
+	}
+
+	// @TODO Move to SemanticAnalyzer
+	try
+	{
+		semanticModel.VerifyEntryPoint();
+	}
+	catch (Exception e)
+	{
+		Console.ForegroundColor = ConsoleColor.DarkRed;
+		Console.WriteLine(e.Message);
+		Console.ResetColor();
+	}
+
+	foreach (var tree in trees)
+	{
+		//LinkTree(tree, semanticModel);
+	}
+	
+	/*nameResolver.Finish();
+	
+	Console.ForegroundColor = ConsoleColor.DarkRed;
+	foreach (var diagnostic in nameResolver.Diagnostics)
+	{
+		Console.WriteLine(diagnostic);
+	}
+	Console.ResetColor();*/
+}
+
+/*
 internal class Evaluator : Expression.IVisitor<object?>
 {
 	public object? Evaluate(SyntaxTree tree)
@@ -106,7 +220,7 @@ internal class Evaluator : Expression.IVisitor<object?>
 		return expression.AcceptVisitor(this);
 	}
 
-	public object? VisitBinaryExpression(BinaryExpression expression)
+	public object? VisitBinaryExpression(Expression.Binary expression)
 	{
 		var left = EvaluateExpression(expression.Left);
 		var right = EvaluateExpression(expression.Right);
@@ -126,7 +240,7 @@ internal class Evaluator : Expression.IVisitor<object?>
 		};
 	}
 
-	public object? VisitUnaryExpression(UnaryExpression expression)
+	public object? VisitUnaryExpression(Expression.Unary expression)
 	{
 		switch (expression.OperatorToken.Type)
 		{
@@ -142,8 +256,43 @@ internal class Evaluator : Expression.IVisitor<object?>
 		}
 	}
 
-	public object? VisitLiteralExpression(LiteralExpression expression)
+	public object? VisitLiteralExpression(Expression.Literal expression)
 	{
 		return expression.Token.Value;
 	}
+}*/
+
+void ExecuteCommand()
+{
+	while (position < args.Length)
+	{
+		if (arguments.TryGetValue(ReadArgument(), out var action))
+		{
+			action();
+		}
+	}
+
+	if (inputPath is null)
+		throw new Exception("Expected \"-in <path>\" argument.");
+
+	if (outputPath is null)
+		throw new Exception("Expected \"-out <path>\" argument.");
+
+	if (File.Exists(inputPath))
+	{
+		/*var nameResolver = new NameResolver();
+		CompileFile(inputPath, nameResolver);
+		nameResolver.Finish();
+		
+		Console.ForegroundColor = ConsoleColor.DarkRed;
+		foreach (var diagnostic in nameResolver.Diagnostics)
+		{
+			Console.WriteLine(diagnostic);
+		}
+		Console.ResetColor();*/
+	}
+	else if (Directory.Exists(inputPath))
+		CompileFolder();
+	else
+		throw new Exception("The input is not an existing file or directory.");
 }
