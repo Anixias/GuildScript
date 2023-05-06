@@ -1,11 +1,11 @@
 namespace GuildScript.Analysis.Semantics;
 
-public sealed class FieldSymbol : MemberSymbol
+public sealed class PropertySymbol : MemberSymbol
 {
 	public bool Resolved { get; private set; }
 	public ResolvedType? Type { get; } = null;
 	
-	public FieldSymbol(string name, Declaration declaration) : base(name, declaration)
+	public PropertySymbol(string name, Declaration declaration) : base(name, declaration)
 	{
 	}
 }

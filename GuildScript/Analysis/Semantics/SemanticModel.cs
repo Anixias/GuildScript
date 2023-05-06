@@ -101,6 +101,19 @@ public sealed class SemanticModel
 		}
 	}
 
+	public PropertySymbol AddProperty(string name, Declaration declaration)
+	{
+		var symbol = new PropertySymbol(name, declaration);
+		switch (CurrentSymbol)
+		{
+			case TypeSymbol type:
+				type.AddMember(symbol);
+				return symbol;
+			default:
+				throw new Exception("Cannot declare properties outside of types.");
+		}
+	}
+
 	public void AddEntryPoint(Statement.EntryPoint statement)
 	{
 		EntryPoints.Add(statement);

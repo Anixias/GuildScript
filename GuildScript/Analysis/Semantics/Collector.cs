@@ -173,7 +173,15 @@ public sealed class Collector : Statement.IVisitor
 
 	public void VisitPropertyStatement(Statement.Property statement)
 	{
-		
+		try
+		{
+			var declaration = new Declaration(statement.NameToken, statement);
+			semanticModel.AddProperty(statement.NameToken.Text, declaration);
+		}
+		catch (Exception e)
+		{
+			Diagnostics.ReportTypeCollectorException(statement.NameToken, e.Message);
+		}
 	}
 
 	public void VisitPropertySignatureStatement(Statement.PropertySignature statement)
