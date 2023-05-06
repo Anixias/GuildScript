@@ -191,7 +191,21 @@ public sealed class Collector : Statement.IVisitor
 
 	public void VisitMethodStatement(Statement.Method statement)
 	{
-		
+		try
+		{
+			var declaration = new Declaration(statement.NameToken, statement);
+			var methodSymbol = semanticModel.AddMethod(statement.NameToken.Text, declaration);
+
+			foreach (var parameter in statement.ParameterList)
+			{
+				var parameterDeclaration = new Declaration(parameter.Name, statement);
+				methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration);
+			}
+		}
+		catch (Exception e)
+		{
+			Diagnostics.ReportTypeCollectorException(statement.NameToken, e.Message);
+		}
 	}
 
 	public void VisitMethodSignatureStatement(Statement.MethodSignature statement)

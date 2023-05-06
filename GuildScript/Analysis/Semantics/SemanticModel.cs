@@ -114,6 +114,19 @@ public sealed class SemanticModel
 		}
 	}
 
+	public MethodSymbol AddMethod(string name, Declaration declaration)
+	{
+		var symbol = new MethodSymbol(name, declaration);
+		switch (CurrentSymbol)
+		{
+			case TypeSymbol type:
+				type.AddMember(symbol);
+				return symbol;
+			default:
+				throw new Exception("Cannot declare methods outside of types.");
+		}
+	}
+
 	public void AddEntryPoint(Statement.EntryPoint statement)
 	{
 		EntryPoints.Add(statement);
