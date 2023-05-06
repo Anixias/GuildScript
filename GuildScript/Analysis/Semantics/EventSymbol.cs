@@ -2,7 +2,6 @@ namespace GuildScript.Analysis.Semantics;
 
 public sealed class EventSymbol : MemberSymbol
 {
-	public bool Resolved { get; private set; }
 	private readonly List<ParameterSymbol> parameters = new();
 	
 	public EventSymbol(string name, Declaration declaration) : base(name, declaration)

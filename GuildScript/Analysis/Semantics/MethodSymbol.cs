@@ -2,7 +2,6 @@ namespace GuildScript.Analysis.Semantics;
 
 public sealed class MethodSymbol : MemberSymbol
 {
-	public bool Resolved { get; private set; }
 	public ResolvedType? ReturnType { get; private set; } = null;
 	
 	private readonly List<ParameterSymbol> parameters = new();

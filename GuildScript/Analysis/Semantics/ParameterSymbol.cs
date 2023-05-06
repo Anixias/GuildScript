@@ -1,13 +1,10 @@
 namespace GuildScript.Analysis.Semantics;
 
-public sealed class ParameterSymbol : Symbol
+public sealed class ParameterSymbol : LocalSymbol
 {
-	public Declaration Declaration { get; }
-	public bool Resolved { get; private set; }
 	public ResolvedType? Type { get; private set; } = null;
 	
-	public ParameterSymbol(string name, Declaration declaration) : base(name)
+	public ParameterSymbol(string name, Declaration declaration) : base(name, declaration)
 	{
-		Declaration = declaration;
 	}
 }

@@ -1,11 +1,11 @@
 namespace GuildScript.Analysis.Semantics;
 
-public abstract class MemberSymbol : Symbol
+public abstract class LocalSymbol : Symbol
 {
 	public bool Resolved { get; private set; }
 	public Declaration Declaration { get; }
 	
-	protected MemberSymbol(string name, Declaration declaration) : base(name)
+	protected LocalSymbol(string name, Declaration declaration) : base(name)
 	{
 		Declaration = declaration;
 	}
