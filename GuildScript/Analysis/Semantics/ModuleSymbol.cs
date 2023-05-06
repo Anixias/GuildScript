@@ -14,6 +14,9 @@ public sealed class ModuleSymbol : Symbol
 	
 	public ModuleSymbol(string name, ModuleSymbol parent) : this(name)
 	{
+		if (!parent.AddChild(this))
+			throw new Exception($"Module '{parent}' already contains a symbol named '{name}'.");
+		
 		Parent = parent;
 		parent.nestedModules.Add(name, this);
 	}
@@ -52,7 +55,7 @@ public sealed class ModuleSymbol : Symbol
 
 	public void AddType(TypeSymbol type)
 	{
-		if (!types.TryAdd(type.Name, type))
+		if (!AddChild(type) || !types.TryAdd(type.Name, type))
 			throw new Exception($"Type '{type.Name}' is already declared in module '{ToString()}'.");
 	}
 }

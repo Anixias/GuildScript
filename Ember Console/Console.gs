@@ -11,6 +11,11 @@ public global class Console
 		ExternalWrite(text);
 	}
 	
+	public void Write(object obj)
+	{
+	    ExternalWrite(obj.ToString());
+	}
+	
 	public void WriteLine(string text)
     {
         ExternalWriteLine(text);

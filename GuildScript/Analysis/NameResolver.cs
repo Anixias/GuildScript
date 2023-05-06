@@ -5,7 +5,7 @@ using GuildScript.Analysis.Text;
 
 namespace GuildScript.Analysis;
 
-public sealed class NameResolver : Statement.IVisitor, Expression.IVisitor
+/*public sealed class NameResolver : Statement.IVisitor, Expression.IVisitor
 {
 	public DiagnosticCollection Diagnostics { get; }
 	public Statement.EntryPoint? EntryPoint { get; private set; }
@@ -701,7 +701,40 @@ public sealed class NameResolver : Statement.IVisitor, Expression.IVisitor
 	}
 
 	public void VisitLambdaExpression(Expression.Lambda expression)
-	{
+	{I apologize for the confusion. Here is the updated ResolveType method that works with the provided TypeSyntax tree hierarchy:
+
+csharp
+
+public ResolvedType ResolveType(TypeSyntax typeSyntax)
+{
+    switch (typeSyntax)
+    {
+        case BaseTypeSyntax baseTypeSyntax:
+            var typeSymbol = FindTypeSymbol(baseTypeSyntax.ToString());
+            if (typeSymbol == null)
+                throw new InvalidOperationException($"Type '{baseTypeSyntax}' not found.");
+            return new SimpleResolvedType(typeSymbol);
+        case NamedTypeSyntax namedTypeSyntax:
+            var namedTypeSymbol = FindTypeSymbol(namedTypeSyntax.Name);
+            if (namedTypeSymbol == null)
+                throw new InvalidOperationException($"Type '{namedTypeSyntax.Name}' not found.");
+            return new SimpleResolvedType(namedTypeSymbol);
+        case NullableTypeSyntax nullableTypeSyntax:
+            var underlyingType = ResolveType(nullableTypeSyntax.BaseType);
+            return new NullableResolvedType(underlyingType);
+        case ArrayTypeSyntax arrayTypeSyntax:
+            var elementType = ResolveType(arrayTypeSyntax.BaseType);
+            return new ArrayResolvedType(elementType);
+        case TemplatedTypeSyntax templatedTypeSyntax:
+            var baseType = ResolveType(templatedTypeSyntax.BaseType) as SimpleResolvedType;
+            if (baseType == null)
+                throw new InvalidOperationException($"Base type '{templatedTypeSyntax.BaseType}' not found or not supported in template.");
+
+            var typeArguments = templatedTypeSyntax.TypeArguments.Select(ResolveType).ToList();
+            return new TemplatedResolvedType(baseType, typeArguments);
+        // Handle other TypeSyntax cases here (e.g., ExpressionTypeSyntax, LambdaTypeSyntax)
+        default:
+            throw new NotSupported
 		BeginScope();
 
 		BeginScope();
@@ -715,4 +748,4 @@ public sealed class NameResolver : Statement.IVisitor, Expression.IVisitor
 		
 		EndScope();
 	}
-}
+}*/

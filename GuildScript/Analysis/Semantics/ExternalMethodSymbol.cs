@@ -1,13 +1,13 @@
 namespace GuildScript.Analysis.Semantics;
 
-public sealed class MethodSymbol : MemberSymbol
+public sealed class ExternalMethodSymbol : MemberSymbol
 {
 	public ResolvedType? ReturnType { get; private set; } = null;
 	
 	private readonly List<ParameterSymbol> parameters = new();
-	private readonly List<MethodSymbol> overloads = new();
+	private readonly List<ExternalMethodSymbol> overloads = new();
 	
-	public MethodSymbol(string name, Declaration declaration) : base(name, declaration)
+	public ExternalMethodSymbol(string name, Declaration declaration) : base(name, declaration)
 	{
 	}
 
@@ -18,9 +18,8 @@ public sealed class MethodSymbol : MemberSymbol
 		return parameter;
 	}
 
-	public void AddOverload(MethodSymbol overload)
+	public void AddOverload(ExternalMethodSymbol overload)
 	{
 		overloads.Add(overload);
 	}
 }
-

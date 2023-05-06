@@ -74,6 +74,11 @@ public sealed class BinaryOperator
 	{
 		return TokenSpan.ToString();
 	}
+	
+	public override int GetHashCode()
+	{
+		return TokenSpan.GetHashCode();
+	}
 
 	public static BinaryOperation? LookupBinaryOperation(SyntaxTokenSpan tokenSpan)
 	{

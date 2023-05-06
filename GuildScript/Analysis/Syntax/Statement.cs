@@ -224,11 +224,13 @@ public abstract class Statement : SyntaxNode
 
 	public sealed class Destructor : Statement
 	{
+		public SyntaxToken DestructorToken { get; }
 		public Statement Body { get; }
 		
-		public Destructor(Statement body)
+		public Destructor(Statement body, SyntaxToken destructorToken)
 		{
 			Body = body;
+			DestructorToken = destructorToken;
 		}
 		
 		public override void AcceptVisitor(IVisitor visitor)
@@ -258,6 +260,7 @@ public abstract class Statement : SyntaxNode
 
 	public sealed class Constructor : Statement
 	{
+		public SyntaxToken ConstructorToken { get; }
 		public SyntaxToken? AccessModifier { get; }
 		public ImmutableArray<Variable> ParameterList { get; }
 		public Statement Body { get; }
@@ -265,12 +268,13 @@ public abstract class Statement : SyntaxNode
 		public ImmutableArray<Expression> ArgumentList { get; }
 
 		public Constructor(SyntaxToken? accessModifier, IEnumerable<Variable> parameterList, Statement body,
-						   SyntaxToken? initializer, IEnumerable<Expression> argumentList)
+						   SyntaxToken? initializer, IEnumerable<Expression> argumentList, SyntaxToken constructorToken)
 		{
 			AccessModifier = accessModifier;
 			ParameterList = parameterList.ToImmutableArray();
 			Body = body;
 			Initializer = initializer;
+			ConstructorToken = constructorToken;
 			ArgumentList = argumentList.ToImmutableArray();
 		}
 		

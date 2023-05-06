@@ -4,10 +4,37 @@ namespace GuildScript.Analysis.Semantics;
 
 public sealed class SemanticModel
 {
-	public List<Statement.EntryPoint> EntryPoints { get; } = new();
+	private List<MethodSymbol> EntryPoints { get; } = new();
 	private Symbol? CurrentSymbol => symbolStack.TryPeek(out var symbol) ? symbol : null;
+	private Scope? CurrentScope => scopeStack.TryPeek(out var scope) ? scope : null;
 	private readonly Stack<Symbol> symbolStack = new();
+	private readonly Stack<Scope> scopeStack = new();
 	private readonly Dictionary<string, ModuleSymbol> globalModules = new();
+	private readonly Dictionary<SyntaxNode, Scope> scopes = new();
+
+	public SemanticModel()
+	{
+		scopeStack.Push(new Scope(null));
+	}
+
+	public Scope EnterScope(SyntaxNode node)
+	{
+		if (scopes.TryGetValue(node, out var existingScope))
+		{
+			scopeStack.Push(existingScope);
+			return existingScope;
+		}
+    
+		var scope = new Scope(CurrentScope);
+		scopes.Add(node, scope);
+		scopeStack.Push(scope);
+		return scope;
+	}
+
+	public void ExitScope()
+	{
+		scopeStack.Pop();
+	}
 
 	public ModuleSymbol AddModule(string name)
 	{
@@ -20,13 +47,25 @@ public sealed class SemanticModel
 			return existingModule;
 
 		var globalModuleSymbol = new ModuleSymbol(name);
+		CurrentScope?.AddSymbol(globalModuleSymbol);
 		globalModules.Add(name, globalModuleSymbol);
 		return globalModuleSymbol;
+	}
+
+	public ModuleSymbol? GetModule(string name)
+	{
+		if (GetAncestorModule() is { } moduleSymbol)
+			return moduleSymbol.ContainsModule(name)
+				? moduleSymbol.GetModule(name)
+				: moduleSymbol.CreateModule(name);
+		
+		return globalModules.TryGetValue(name, out var existingModule) ? existingModule : null;
 	}
 
 	public ClassSymbol AddClass(string name, Declaration declaration)
 	{
 		var symbol = new ClassSymbol(name, declaration);
+		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
 			case ModuleSymbol module:
@@ -43,6 +82,7 @@ public sealed class SemanticModel
 	public StructSymbol AddStruct(string name, Declaration declaration)
 	{
 		var symbol = new StructSymbol(name, declaration);
+		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
 			case ModuleSymbol module:
@@ -59,6 +99,7 @@ public sealed class SemanticModel
 	public EnumSymbol AddEnum(string name, Declaration declaration)
 	{
 		var symbol = new EnumSymbol(name, declaration);
+		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
 			case ModuleSymbol module:
@@ -75,6 +116,7 @@ public sealed class SemanticModel
 	public InterfaceSymbol AddInterface(string name, Declaration declaration)
 	{
 		var symbol = new InterfaceSymbol(name, declaration);
+		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
 			case ModuleSymbol module:
@@ -91,6 +133,7 @@ public sealed class SemanticModel
 	public FieldSymbol AddField(string name, Declaration declaration)
 	{
 		var symbol = new FieldSymbol(name, declaration);
+		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
 			case TypeSymbol type:
@@ -101,9 +144,17 @@ public sealed class SemanticModel
 		}
 	}
 
+	public LocalVariableSymbol AddLocalVariable(string name, Declaration declaration)
+	{
+		var symbol = new LocalVariableSymbol(name, declaration);
+		CurrentScope?.AddSymbol(symbol);
+		return symbol;
+	}
+
 	public PropertySymbol AddProperty(string name, Declaration declaration)
 	{
 		var symbol = new PropertySymbol(name, declaration);
+		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
 			case TypeSymbol type:
@@ -117,6 +168,7 @@ public sealed class SemanticModel
 	public MethodSymbol AddMethod(string name, Declaration declaration)
 	{
 		var symbol = new MethodSymbol(name, declaration);
+		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
 			case TypeSymbol type:
@@ -130,6 +182,7 @@ public sealed class SemanticModel
 	public EventSymbol AddEvent(string name, Declaration declaration)
 	{
 		var symbol = new EventSymbol(name, declaration);
+		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
 			case TypeSymbol type:
@@ -140,9 +193,54 @@ public sealed class SemanticModel
 		}
 	}
 
-	public void AddEntryPoint(Statement.EntryPoint statement)
+	public ExternalMethodSymbol AddExternalMethod(string name, Declaration declaration)
 	{
-		EntryPoints.Add(statement);
+		var symbol = new ExternalMethodSymbol(name, declaration);
+		CurrentScope?.AddSymbol(symbol);
+		switch (CurrentSymbol)
+		{
+			case TypeSymbol type:
+				type.AddMember(symbol);
+				return symbol;
+			default:
+				throw new Exception("Cannot declare external methods outside of types.");
+		}
+	}
+
+	public ConstructorSymbol AddConstructor(string name, Declaration declaration)
+	{
+		var symbol = new ConstructorSymbol(name, declaration);
+		CurrentScope?.AddSymbol(symbol);
+		switch (CurrentSymbol)
+		{
+			case TypeSymbol type:
+				type.AddMember(symbol);
+				return symbol;
+			default:
+				throw new Exception("Cannot declare constructors outside of types.");
+		}
+	}
+
+	public DestructorSymbol AddDestructor(string name, Declaration declaration)
+	{
+		var symbol = new DestructorSymbol(name, declaration);
+		CurrentScope?.AddSymbol(symbol);
+		switch (CurrentSymbol)
+		{
+			case TypeSymbol type:
+				type.AddMember(symbol);
+				return symbol;
+			default:
+				throw new Exception("Cannot declare destructors outside of types.");
+		}
+	}
+
+	public MethodSymbol AddEntryPoint(Statement.EntryPoint statement)
+	{
+		var symbol = new MethodSymbol(statement.Identifier.Text, new Declaration(statement.Identifier, statement));
+		CurrentScope?.AddSymbol(symbol);
+		EntryPoints.Add(symbol);
+		return symbol;
 	}
 
 	public void VerifyEntryPoint()

@@ -28,4 +28,16 @@ public sealed class SyntaxTokenSpan
 
 		return stringBuilder.ToString();
 	}
+	
+	public override int GetHashCode()
+	{
+		var hash = 0b01001111011001100101010101101010;
+
+		for (var i = 0; i < Tokens.Length; i++)
+		{
+			hash ^= Tokens[i].Type.GetHashCode() << i;
+		}
+
+		return hash;
+	}
 }

@@ -36,6 +36,11 @@ public abstract class Expression : SyntaxNode
 		{
 			visitor.VisitAwaitExpression(this);
 		}
+
+		public override int GetHashCode()
+		{
+			return Expression.GetHashCode() ^ 0xF0A8B17;
+		}
 	}
 
 	public sealed class Conditional : Expression
@@ -55,6 +60,15 @@ public abstract class Expression : SyntaxNode
 		{
 			visitor.VisitConditionalExpression(this);
 		}
+		
+		public override int GetHashCode()
+		{
+			var hash = 0;
+			hash ^= Condition.GetHashCode();
+			hash ^= TrueExpression.GetHashCode() << 1;
+			hash ^= FalseExpression.GetHashCode() << 2;
+			return hash;
+		}
 	}
 
 	public sealed class Binary : Expression
@@ -73,6 +87,15 @@ public abstract class Expression : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitBinaryExpression(this);
+		}
+		
+		public override int GetHashCode()
+		{
+			var hash = 0;
+			hash ^= Left.GetHashCode();
+			hash ^= Operator.GetHashCode() << 1;
+			hash ^= Right.GetHashCode() << 2;
+			return hash;
 		}
 	}
 
@@ -95,6 +118,16 @@ public abstract class Expression : SyntaxNode
 		{
 			visitor.VisitTypeRelationExpression(this);
 		}
+		
+		public override int GetHashCode()
+		{
+			var hash = 0;
+			hash ^= Operand.GetHashCode();
+			hash ^= Operator.GetHashCode() << 1;
+			hash ^= Type?.GetHashCode() << 2 ?? 0;
+			hash ^= IdentifierToken?.Type.GetHashCode() << 3 ?? 0;
+			return hash;
+		}
 	}
 
 	public sealed class Unary : Expression
@@ -113,6 +146,15 @@ public abstract class Expression : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitUnaryExpression(this);
+		}
+		
+		public override int GetHashCode()
+		{
+			var hash = 0;
+			hash ^= Operand.GetHashCode();
+			hash ^= OperatorToken.Type.GetHashCode() << 1;
+			hash ^= IsPostfix.GetHashCode() << 2;
+			return hash;
 		}
 	}
 
@@ -134,6 +176,11 @@ public abstract class Expression : SyntaxNode
 		{
 			return NameToken.Text;
 		}
+		
+		public override int GetHashCode()
+		{
+			return NameToken.Text.GetHashCode();
+		}
 	}
 
 	public sealed class Qualifier : Expression
@@ -154,10 +201,19 @@ public abstract class Expression : SyntaxNode
 		{
 			return NameToken.Text;
 		}
+		
+		public override int GetHashCode()
+		{
+			return NameToken.Text.GetHashCode();
+		}
 	}
 
 	public sealed class Call : Expression
 	{
+		public Expression Function { get; }
+		public ImmutableArray<Expression> TemplateArguments { get; }
+		public ImmutableArray<Expression> Arguments { get; }
+		
 		public Call(Expression function, IEnumerable<Expression> templateArguments, IEnumerable<Expression> arguments)
 		{
 			Function = function;
@@ -165,13 +221,26 @@ public abstract class Expression : SyntaxNode
 			Arguments = arguments.ToImmutableArray();
 		}
 
-		public Expression Function { get; }
-		public ImmutableArray<Expression> TemplateArguments { get; }
-		public ImmutableArray<Expression> Arguments { get; }
-
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitCallExpression(this);
+		}
+		
+		public override int GetHashCode()
+		{
+			var hash = Function.GetHashCode();
+
+			for (var i = 0; i < TemplateArguments.Length; i++)
+			{
+				hash ^= TemplateArguments[i].GetHashCode() << (i + 1);
+			}
+			
+			for (var i = 0; i < Arguments.Length; i++)
+			{
+				hash ^= Arguments[i].GetHashCode() << (i + 1 + TemplateArguments.Length);
+			}
+
+			return hash;
 		}
 	}
 
@@ -187,6 +256,11 @@ public abstract class Expression : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitLiteralExpression(this);
+		}
+		
+		public override int GetHashCode()
+		{
+			return Token.Text.GetHashCode();
 		}
 	}
 
@@ -215,6 +289,23 @@ public abstract class Expression : SyntaxNode
 		{
 			visitor.VisitInstantiateExpression(this);
 		}
+		
+		public override int GetHashCode()
+		{
+			var hash = InstanceType.GetHashCode();
+
+			for (var i = 0; i < Initializers.Length; i++)
+			{
+				hash ^= Initializers[i].GetHashCode() << (i + 1);
+			}
+			
+			for (var i = 0; i < Arguments.Length; i++)
+			{
+				hash ^= Arguments[i].GetHashCode() << (i + 1 + Initializers.Length);
+			}
+
+			return hash;
+		}
 	}
 
 	public sealed class Cast : Expression
@@ -233,6 +324,15 @@ public abstract class Expression : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitCastExpression(this);
+		}
+		
+		public override int GetHashCode()
+		{
+			var hash = 0;
+			hash ^= Expression.GetHashCode();
+			hash ^= TargetType.GetHashCode() << 1;
+			hash ^= IsConditional.GetHashCode() << 2;
+			return hash;
 		}
 	}
 
@@ -253,6 +353,15 @@ public abstract class Expression : SyntaxNode
 		{
 			visitor.VisitIndexExpression(this);
 		}
+		
+		public override int GetHashCode()
+		{
+			var hash = 0;
+			hash ^= Expression.GetHashCode();
+			hash ^= Key.GetHashCode() << 1;
+			hash ^= IsConditional.GetHashCode() << 2;
+			return hash;
+		}
 	}
 
 	public sealed class Lambda : Expression
@@ -271,6 +380,20 @@ public abstract class Expression : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitLambdaExpression(this);
+		}
+		
+		public override int GetHashCode()
+		{
+			var hash = 0;
+			hash ^= ReturnType?.GetHashCode() ?? 0;
+			hash ^= Body.GetHashCode() << 1;
+
+			for (var i = 0; i < ParameterList.Length; i++)
+			{
+				hash ^= ParameterList[i].GetHashCode() << (2 + i);
+			}
+			
+			return hash;
 		}
 	}
 }

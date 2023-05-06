@@ -976,9 +976,9 @@ public sealed class Parser
 
 	private Statement ParseMember()
 	{
-		if (Match(SyntaxTokenType.Destructor))
+		if (Match(out var destructorToken, SyntaxTokenType.Destructor))
 		{
-			return ParseDestructor();
+			return ParseDestructor(destructorToken);
 		}
 
 		if (Match(SyntaxTokenType.External))
@@ -993,9 +993,9 @@ public sealed class Parser
 		
 		var accessModifier = ParseAccessModifier();
 
-		if (Match(SyntaxTokenType.Constructor))
+		if (Match(out var constructorToken, SyntaxTokenType.Constructor))
 		{
-			return ParseConstructor(accessModifier);
+			return ParseConstructor(constructorToken, accessModifier);
 		}
 
 		var peek = 0;
@@ -1057,10 +1057,10 @@ public sealed class Parser
 		throw Error("Expected member.");
 	}
 
-	private Statement.Destructor ParseDestructor()
+	private Statement.Destructor ParseDestructor(SyntaxToken destructorToken)
 	{
 		var body = ParseBlock();
-		return new Statement.Destructor(body);
+		return new Statement.Destructor(body, destructorToken);
 	}
 
 	private Statement.ExternalMethod ParseExternalMethod()
@@ -1080,7 +1080,7 @@ public sealed class Parser
 		return new Statement.ExternalMethod(returnType, identifier, parameterList);
 	}
 
-	private Statement.Constructor ParseConstructor(SyntaxToken? accessModifier)
+	private Statement.Constructor ParseConstructor(SyntaxToken constructorToken, SyntaxToken? accessModifier)
 	{
 		Consume(SyntaxTokenType.OpenParen);
 		var parameterList = new List<Variable>();
@@ -1105,7 +1105,8 @@ public sealed class Parser
 
 		var body = ParseBlock();
 
-		return new Statement.Constructor(accessModifier, parameterList, body, initializer, argumentList);
+		return new Statement.Constructor(accessModifier, parameterList, body, initializer, argumentList,
+			constructorToken);
 	}
 
 	private Statement.Indexer ParseIndexer(SyntaxToken? accessModifier)

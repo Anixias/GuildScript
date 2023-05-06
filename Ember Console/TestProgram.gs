@@ -38,20 +38,20 @@ class Player
 entry int Main()
 {
 	// Create rooms
-	Room room1 = new Room
+	var room1 = new Room
 	{
 		Name = "Living Room",
 		Description = "You are in the living room. There is a door to the north."
 	};
 
-	Room room2 = new Room
+	var room2 = new Room
 	{
 		Name = "Kitchen",
 		Description = "You are in the kitchen. There is a door to the south."
 	};
 
 	// Create player
-	Player player = new Player
+	var player = new Player
 	{
 		Name = "John",
 		CurrentRoom = room1
