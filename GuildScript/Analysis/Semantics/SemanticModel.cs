@@ -127,6 +127,19 @@ public sealed class SemanticModel
 		}
 	}
 
+	public EventSymbol AddEvent(string name, Declaration declaration)
+	{
+		var symbol = new EventSymbol(name, declaration);
+		switch (CurrentSymbol)
+		{
+			case TypeSymbol type:
+				type.AddMember(symbol);
+				return symbol;
+			default:
+				throw new Exception("Cannot declare events outside of types.");
+		}
+	}
+
 	public void AddEntryPoint(Statement.EntryPoint statement)
 	{
 		EntryPoints.Add(statement);

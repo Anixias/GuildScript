@@ -163,7 +163,21 @@ public sealed class Collector : Statement.IVisitor
 
 	public void VisitEventStatement(Statement.Event statement)
 	{
-		
+		try
+		{
+			var declaration = new Declaration(statement.NameToken, statement);
+			var eventSymbol = semanticModel.AddEvent(statement.NameToken.Text, declaration);
+
+			foreach (var parameter in statement.ParameterList)
+			{
+				var parameterDeclaration = new Declaration(parameter.Name, statement);
+				eventSymbol.AddParameter(parameter.Name.Text, parameterDeclaration);
+			}
+		}
+		catch (Exception e)
+		{
+			Diagnostics.ReportTypeCollectorException(statement.NameToken, e.Message);
+		}
 	}
 
 	public void VisitEventSignatureStatement(Statement.EventSignature statement)
