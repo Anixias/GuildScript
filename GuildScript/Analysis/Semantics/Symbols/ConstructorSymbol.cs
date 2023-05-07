@@ -1,4 +1,4 @@
-namespace GuildScript.Analysis.Semantics;
+namespace GuildScript.Analysis.Semantics.Symbols;
 
 public sealed class ConstructorSymbol : MemberSymbol
 {

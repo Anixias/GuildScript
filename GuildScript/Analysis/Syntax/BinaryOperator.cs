@@ -80,6 +80,19 @@ public sealed class BinaryOperator
 		return TokenSpan.GetHashCode();
 	}
 
+	public override bool Equals(object? obj)
+	{
+		if (obj is BinaryOperator binaryOperator)
+			return Equals(binaryOperator);
+
+		return false;
+	}
+
+	private bool Equals(BinaryOperator other)
+	{
+		return TokenSpan.Equals(other.TokenSpan);
+	}
+
 	public static BinaryOperation? LookupBinaryOperation(SyntaxTokenSpan tokenSpan)
 	{
 		return tokenSpan.Tokens.Length switch

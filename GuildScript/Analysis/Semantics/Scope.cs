@@ -1,3 +1,5 @@
+using GuildScript.Analysis.Semantics.Symbols;
+
 namespace GuildScript.Analysis.Semantics;
 
 public sealed class Scope
@@ -13,5 +15,16 @@ public sealed class Scope
 	public void AddSymbol(Symbol symbol)
 	{
 		Symbols.Add(symbol);
+	}
+
+	public Symbol? FindSymbol(string name)
+	{
+		foreach (var symbol in Symbols)
+		{
+			if (symbol.Name == name)
+				return symbol;
+		}
+
+		return Parent?.FindSymbol(name);
 	}
 }

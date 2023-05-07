@@ -405,7 +405,8 @@ public sealed class Collector : Statement.IVisitor
 	{
 		semanticModel.EnterScope(statement);
 
-		semanticModel.AddLocalVariable(statement.Iterator.Text, new Declaration(statement.Iterator, statement));
+		semanticModel.AddLocalVariable(statement.Iterator.Text, new Declaration(statement.Iterator, statement),
+			statement.IteratorType);
 		statement.Body.AcceptVisitor(this);
 		
 		semanticModel.ExitScope();
@@ -449,7 +450,7 @@ public sealed class Collector : Statement.IVisitor
 		try
 		{
 			var declaration = new Declaration(statement.Identifier, statement);
-			semanticModel.AddLocalVariable(statement.Identifier.Text, declaration);
+			semanticModel.AddLocalVariable(statement.Identifier.Text, declaration, statement.Type);
 		}
 		catch (Exception e)
 		{
@@ -478,7 +479,7 @@ public sealed class Collector : Statement.IVisitor
 					continue;
 				
 				semanticModel.AddLocalVariable(patternLabel.Identifier.Text,
-					new Declaration(patternLabel.Identifier, statement));
+					new Declaration(patternLabel.Identifier, statement), patternLabel.Type);
 			}
 			semanticModel.ExitScope();
 		}

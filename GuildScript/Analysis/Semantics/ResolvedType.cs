@@ -1,3 +1,5 @@
+using GuildScript.Analysis.Semantics.Symbols;
+
 namespace GuildScript.Analysis.Semantics;
 
 public abstract class ResolvedType
@@ -12,8 +14,11 @@ public abstract class ResolvedType
 
 public sealed class NullableResolvedType : ResolvedType
 {
-	public NullableResolvedType(TypeSymbol typeSymbol) : base(typeSymbol)
+	public ResolvedType BaseType { get; }
+	
+	public NullableResolvedType(ResolvedType baseType) : base(baseType.TypeSymbol)
 	{
+		BaseType = baseType;
 	}
 }
 
@@ -27,12 +32,14 @@ public sealed class ArrayResolvedType : ResolvedType
 	}
 }
 
-public sealed class TemplateResolvedType : ResolvedType
+public sealed class TemplatedResolvedType : ResolvedType
 {
+	public ResolvedType BaseType { get; }
 	public IReadOnlyList<ResolvedType> TypeArguments { get; }
-
-	public TemplateResolvedType(TypeSymbol typeSymbol, IReadOnlyList<ResolvedType> typeArguments) : base(typeSymbol)
+	
+	public TemplatedResolvedType(ResolvedType baseType, IReadOnlyList<ResolvedType> typeArguments) : base(baseType.TypeSymbol)
 	{
+		BaseType = baseType;
 		TypeArguments = typeArguments;
 	}
 }
@@ -58,7 +65,7 @@ public sealed class SimpleResolvedType : ResolvedType
 	public static readonly SimpleResolvedType Object = new(NativeTypeSymbol.Object);
 	public static readonly SimpleResolvedType String = new(NativeTypeSymbol.String);
 
-	private static readonly Dictionary<string, SimpleResolvedType> Types = new()
+	private static readonly Dictionary<string, SimpleResolvedType> NativeTypes = new()
 	{
 		{ Syntax.SyntaxTokenType.Int8.ToString(), Int8 },
 		{ Syntax.SyntaxTokenType.UInt8.ToString(), UInt8 },
@@ -78,6 +85,6 @@ public sealed class SimpleResolvedType : ResolvedType
 
 	public static ResolvedType? FindNativeType(string token)
 	{
-		return Types.TryGetValue(token, out var type) ? type : null;
+		return NativeTypes.TryGetValue(token, out var type) ? type : null;
 	}
 }

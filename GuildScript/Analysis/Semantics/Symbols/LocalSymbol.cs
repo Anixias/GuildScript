@@ -1,8 +1,8 @@
-namespace GuildScript.Analysis.Semantics;
+namespace GuildScript.Analysis.Semantics.Symbols;
 
 public abstract class LocalSymbol : Symbol
 {
-	public bool Resolved { get; private set; }
+	public bool Resolved { get; set; }
 	public Declaration Declaration { get; }
 	
 	protected LocalSymbol(string name, Declaration declaration) : base(name)

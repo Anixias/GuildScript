@@ -1,6 +1,6 @@
 using System.Collections.Immutable;
 
-namespace GuildScript.Analysis.Semantics;
+namespace GuildScript.Analysis.Semantics.Symbols;
 
 public abstract class Symbol
 {

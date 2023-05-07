@@ -1,9 +1,12 @@
+using GuildScript.Analysis.Semantics.Symbols;
 using GuildScript.Analysis.Syntax;
 
 namespace GuildScript.Analysis.Semantics;
 
 public sealed class SemanticModel
 {
+	public IEnumerable<TypeSymbol> TypeSymbols => typeSymbols;
+
 	private List<MethodSymbol> EntryPoints { get; } = new();
 	private Symbol? CurrentSymbol => symbolStack.TryPeek(out var symbol) ? symbol : null;
 	private Scope? CurrentScope => scopeStack.TryPeek(out var scope) ? scope : null;
@@ -11,6 +14,7 @@ public sealed class SemanticModel
 	private readonly Stack<Scope> scopeStack = new();
 	private readonly Dictionary<string, ModuleSymbol> globalModules = new();
 	private readonly Dictionary<SyntaxNode, Scope> scopes = new();
+	private readonly List<TypeSymbol> typeSymbols = new();
 
 	public SemanticModel()
 	{
@@ -65,6 +69,7 @@ public sealed class SemanticModel
 	public ClassSymbol AddClass(string name, Declaration declaration)
 	{
 		var symbol = new ClassSymbol(name, declaration);
+		typeSymbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
@@ -82,6 +87,7 @@ public sealed class SemanticModel
 	public StructSymbol AddStruct(string name, Declaration declaration)
 	{
 		var symbol = new StructSymbol(name, declaration);
+		typeSymbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
@@ -99,6 +105,7 @@ public sealed class SemanticModel
 	public EnumSymbol AddEnum(string name, Declaration declaration)
 	{
 		var symbol = new EnumSymbol(name, declaration);
+		typeSymbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
@@ -116,6 +123,7 @@ public sealed class SemanticModel
 	public InterfaceSymbol AddInterface(string name, Declaration declaration)
 	{
 		var symbol = new InterfaceSymbol(name, declaration);
+		typeSymbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
@@ -144,9 +152,9 @@ public sealed class SemanticModel
 		}
 	}
 
-	public LocalVariableSymbol AddLocalVariable(string name, Declaration declaration)
+	public LocalVariableSymbol AddLocalVariable(string name, Declaration declaration, TypeSyntax? typeSyntax)
 	{
-		var symbol = new LocalVariableSymbol(name, declaration);
+		var symbol = new LocalVariableSymbol(name, declaration, typeSyntax);
 		CurrentScope?.AddSymbol(symbol);
 		return symbol;
 	}
@@ -273,5 +281,15 @@ public sealed class SemanticModel
 		}
 
 		return null;
+	}
+
+	public Symbol? FindSymbol(string name)
+	{
+		return CurrentScope?.FindSymbol(name);
+	}
+
+	public MethodSymbol GetEntryPoint()
+	{
+		return EntryPoints[0];
 	}
 }

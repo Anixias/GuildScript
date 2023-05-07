@@ -1,6 +1,4 @@
-using GuildScript.Analysis.Syntax;
-
-namespace GuildScript.Analysis.Semantics;
+namespace GuildScript.Analysis.Semantics.Symbols;
 
 public sealed class ModuleSymbol : Symbol
 {

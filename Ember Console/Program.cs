@@ -163,6 +163,8 @@ SyntaxTree? AnalyzeFile(string path, SemanticModel semanticModel)
 
 void LinkTree(SyntaxTree tree, SemanticModel semanticModel)
 {
+	var resolver = new Resolver(semanticModel);
+	resolver.Resolve(tree);
 	//var nameResolver = new NameResolver(semanticModel);
 	//nameResolver.Resolve(tree.Root);
 }
@@ -194,7 +196,7 @@ void CompileFolder()
 
 	foreach (var tree in trees)
 	{
-		//LinkTree(tree, semanticModel);
+		LinkTree(tree, semanticModel);
 	}
 	
 	/*nameResolver.Finish();

@@ -1,11 +1,17 @@
-namespace GuildScript.Analysis.Semantics;
+namespace GuildScript.Analysis.Semantics.Symbols;
 
-public sealed class InterfaceSymbol : TypeSymbol
+public sealed class ClassSymbol : TypeSymbol
 {
+	private readonly ClassSymbol? baseClass;
 	private readonly List<InterfaceSymbol> interfaces = new();
 	
-	public InterfaceSymbol(string name, Declaration declaration) : base(name, declaration)
+	public ClassSymbol(string name, Declaration declaration) : this(name, null, declaration)
 	{
+	}
+	
+	public ClassSymbol(string name, ClassSymbol? baseClass, Declaration declaration) : base(name, declaration)
+	{
+		this.baseClass = baseClass;
 	}
 	
 	public void AddInterface(InterfaceSymbol symbol)
@@ -13,11 +19,14 @@ public sealed class InterfaceSymbol : TypeSymbol
 		if (!interfaces.Contains(symbol))
 			interfaces.Add(symbol);
 	}
-	
+
 	public override Symbol? FindMember(string name)
 	{
 		if (members.TryGetValue(name, out var member))
 			return member;
+
+		if (baseClass is not null)
+			return baseClass.FindMember(name);
 		
 		foreach (var @interface in interfaces)
 		{

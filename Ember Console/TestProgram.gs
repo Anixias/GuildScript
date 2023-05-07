@@ -35,7 +35,7 @@ class Player
 	}
 }
 
-entry int Main()
+entry int Main(int arg1, string arg2, Player arg3)
 {
 	// Create rooms
 	var room1 = new Room

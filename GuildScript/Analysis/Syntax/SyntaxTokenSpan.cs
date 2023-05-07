@@ -40,4 +40,26 @@ public sealed class SyntaxTokenSpan
 
 		return hash;
 	}
+
+	public override bool Equals(object? obj)
+	{
+		if (obj is SyntaxTokenSpan span)
+			return Equals(span);
+
+		return false;
+	}
+
+	private bool Equals(SyntaxTokenSpan span)
+	{
+		if (Tokens.Length != span.Tokens.Length)
+			return false;
+
+		for (var i = 0; i < Tokens.Length; i++)
+		{
+			if (Tokens[i].Type != span.Tokens[i].Type)
+				return false;
+		}
+
+		return true;
+	}
 }
