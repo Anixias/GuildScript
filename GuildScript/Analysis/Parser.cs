@@ -691,6 +691,7 @@ public sealed class Parser
 		try
 		{
 			suppressErrors = true;
+			Match(SyntaxTokenType.Immutable);
 			Consume(SyntaxTokenType.OpenSquare);
 			var tokenCount = 0;
 
@@ -756,6 +757,11 @@ public sealed class Parser
 			else if (Match(SyntaxTokenType.OpenSquare))
 			{
 				type = new ArrayTypeSyntax(type);
+				Consume(SyntaxTokenType.CloseSquare);
+			}
+			else if (Match(SyntaxTokenType.QuestionOpenSquare))
+			{
+				type = new ArrayTypeSyntax(new NullableTypeSyntax(type));
 				Consume(SyntaxTokenType.CloseSquare);
 			}
 			else if (type is NamedTypeSyntax namedTypeSyntax && Match(SyntaxTokenType.LeftAngled))
@@ -1307,6 +1313,8 @@ public sealed class Parser
 
 	private Statement.OperatorOverload ParseOperatorOverload()
 	{
+		var immutable = Match(SyntaxTokenType.Immutable);
+		
 		Consume(SyntaxTokenType.OpenSquare);
 
 		var operatorTokens = new List<SyntaxToken>();
@@ -1331,11 +1339,12 @@ public sealed class Parser
 
 		var body = ParseBlock();
 		var @operator = new SyntaxTokenSpan(operatorTokens);
-		return new Statement.OperatorOverload(returnType, @operator, parameterList, body);
+		return new Statement.OperatorOverload(returnType, @operator, parameterList, body, immutable);
 	}
 
 	private Statement.OperatorOverloadSignature ParseOperatorOverloadSignature()
 	{
+		var immutable = Match(SyntaxTokenType.Immutable);
 		Consume(SyntaxTokenType.OpenSquare);
 
 		var operatorTokens = new List<SyntaxToken>();
@@ -1360,7 +1369,7 @@ public sealed class Parser
 		Consume(SyntaxTokenType.Semicolon);
 		
 		var @operator = new SyntaxTokenSpan(operatorTokens);
-		return new Statement.OperatorOverloadSignature(returnType, @operator, parameterList);
+		return new Statement.OperatorOverloadSignature(returnType, @operator, parameterList, immutable);
 	}
 
 	private Statement.MethodSignature ParseMethodSignature()

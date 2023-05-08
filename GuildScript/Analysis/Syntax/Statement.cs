@@ -511,19 +511,21 @@ public abstract class Statement : SyntaxNode
 
 	public sealed class OperatorOverload : Statement
 	{
+		public bool Immutable { get; }
 		public TypeSyntax ReturnType { get; }
 		public SyntaxTokenSpan OperatorTokens { get; }
 		public ImmutableArray<Variable> ParameterList { get; }
 		public Statement Body { get; }
 
 		public OperatorOverload(TypeSyntax returnType, SyntaxTokenSpan operatorTokens,
-								IEnumerable<Variable> parameterList, Statement body)
+								IEnumerable<Variable> parameterList, Statement body, bool immutable)
 
 		{
 			ReturnType = returnType;
 			OperatorTokens = operatorTokens;
 			ParameterList = parameterList.ToImmutableArray();
 			Body = body;
+			Immutable = immutable;
 		}
 
 		public override void AcceptVisitor(IVisitor visitor)
@@ -534,16 +536,18 @@ public abstract class Statement : SyntaxNode
 
 	public sealed class OperatorOverloadSignature : Statement
 	{
+		public bool Immutable { get; }
 		public TypeSyntax ReturnType { get; }
 		public SyntaxTokenSpan OperatorTokens { get; }
 		public ImmutableArray<Variable> ParameterList { get; }
 
 		public OperatorOverloadSignature(TypeSyntax returnType, SyntaxTokenSpan operatorTokens, 
-										 IEnumerable<Variable> parameterList)
+										 IEnumerable<Variable> parameterList, bool immutable)
 
 		{
 			ReturnType = returnType;
 			OperatorTokens = operatorTokens;
+			Immutable = immutable;
 			ParameterList = parameterList.ToImmutableArray();
 		}
 

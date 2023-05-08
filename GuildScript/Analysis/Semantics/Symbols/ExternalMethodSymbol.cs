@@ -6,8 +6,8 @@ public sealed class ExternalMethodSymbol : MemberSymbol
 	
 	private readonly List<ParameterSymbol> parameters = new();
 	private readonly List<ExternalMethodSymbol> overloads = new();
-	
-	public ExternalMethodSymbol(string name, Declaration declaration) : base(name, declaration)
+
+	public ExternalMethodSymbol(string name, Declaration declaration) : base(name, declaration, AccessModifier.Private)
 	{
 	}
 

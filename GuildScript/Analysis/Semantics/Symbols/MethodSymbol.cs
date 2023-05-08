@@ -1,14 +1,19 @@
+using System.Collections.Immutable;
+
 namespace GuildScript.Analysis.Semantics.Symbols;
 
 public sealed class MethodSymbol : MemberSymbol
 {
-	public ResolvedType? ReturnType { get; set; } = null;
+	public ImmutableArray<MethodModifier> Modifiers { get; }
+	public ResolvedType? ReturnType { get; set; }
 	
 	private readonly Dictionary<string, ParameterSymbol> parameters = new();
 	private readonly List<MethodSymbol> overloads = new();
-	
-	public MethodSymbol(string name, Declaration declaration) : base(name, declaration)
+
+	public MethodSymbol(string name, Declaration declaration, AccessModifier accessModifier,
+						IEnumerable<MethodModifier> modifiers) : base(name, declaration, accessModifier)
 	{
+		Modifiers = modifiers.ToImmutableArray();
 	}
 
 	public ParameterSymbol AddParameter(string name, Declaration declaration, bool isReference)

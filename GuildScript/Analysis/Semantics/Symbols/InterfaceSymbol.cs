@@ -3,8 +3,9 @@ namespace GuildScript.Analysis.Semantics.Symbols;
 public sealed class InterfaceSymbol : TypeSymbol
 {
 	private readonly List<InterfaceSymbol> interfaces = new();
-	
-	public InterfaceSymbol(string name, Declaration declaration) : base(name, declaration)
+
+	public InterfaceSymbol(string name, Declaration declaration, AccessModifier accessModifier) : base(name,
+		declaration, accessModifier)
 	{
 	}
 	

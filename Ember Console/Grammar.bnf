@@ -51,8 +51,8 @@
 <property-declaration>			-> <access-modifier>? <method-modifier>* <type> <identifier> "{" <property-accessor>* "}"
 <constructor-declaration>		-> <access-modifier>? "constructor" "(" <parameter-list>? ")" <constructor-initializer>? <block>
 <destructor-declaration>		-> "destructor" "(" ")" <block>
-<method-signature>				-> <method-modifier>? <type> <identifier> <template-params>? "(" <parameter-list>? ")" ";"
-<property-signature>			-> <method-modifier>? <type> <identifier> "{" <property-accessor-signature>* "}"
+<method-signature>				-> <method-modifier>* <type> <identifier> <template-params>? "(" <parameter-list>? ")" ";"
+<property-signature>			-> <method-modifier>* <type> <identifier> "{" <property-accessor-signature>* "}"
 <operator-overload-signature>   -> "[" <operator> "]" <type> "(" <parameter-list>? ")" ";"
 <base-type>						-> <int-type> | <real-type> | "char" | "string" | "bool" | "void" | "object"
 <local-var-declaration>			-> (<type> | "var") <identifier> ("=" <expression>)?

@@ -8,14 +8,14 @@ public sealed class LambdaTypeSymbol : TypeSymbol
 	public ResolvedType? ReturnType { get; set; }
 
 	public LambdaTypeSymbol(List<ResolvedType> parameterTypes, ResolvedType? returnType)
-		: base(BuildName(parameterTypes, returnType))
+		: base(BuildName(parameterTypes, returnType), AccessModifier.Public)
 	{
 		ParameterTypes = parameterTypes;
 		ReturnType = returnType;
 	}
 
-	public LambdaTypeSymbol(List<ResolvedType> parameterTypes, ResolvedType? returnType,
-							Declaration declaration) : base(BuildName(parameterTypes, returnType), declaration)
+	public LambdaTypeSymbol(List<ResolvedType> parameterTypes, ResolvedType? returnType, Declaration declaration) :
+		base(BuildName(parameterTypes, returnType), declaration, AccessModifier.Public)
 	{
 		ParameterTypes = parameterTypes;
 		ReturnType = returnType;

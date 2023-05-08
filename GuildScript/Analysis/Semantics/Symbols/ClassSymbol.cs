@@ -2,16 +2,20 @@ namespace GuildScript.Analysis.Semantics.Symbols;
 
 public sealed class ClassSymbol : TypeSymbol
 {
+	public ClassModifier ClassModifier { get; }
 	public ClassSymbol? BaseClass { get; }
 	private readonly List<InterfaceSymbol> interfaces = new();
-	
-	public ClassSymbol(string name, Declaration declaration) : this(name, null, declaration)
+
+	public ClassSymbol(string name, Declaration declaration, ClassModifier classModifier, AccessModifier accessModifier)
+		: this(name, null, declaration, classModifier, accessModifier)
 	{
 	}
-	
-	public ClassSymbol(string name, ClassSymbol? baseClass, Declaration declaration) : base(name, declaration)
+
+	public ClassSymbol(string name, ClassSymbol? baseClass, Declaration declaration, ClassModifier classModifier,
+					   AccessModifier accessModifier) : base(name, declaration, accessModifier)
 	{
 		BaseClass = baseClass;
+		ClassModifier = classModifier;
 	}
 	
 	public void AddInterface(InterfaceSymbol symbol)

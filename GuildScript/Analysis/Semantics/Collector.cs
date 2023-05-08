@@ -1,3 +1,4 @@
+using GuildScript.Analysis.Semantics.Symbols;
 using GuildScript.Analysis.Syntax;
 using GuildScript.Analysis.Text;
 
@@ -76,13 +77,44 @@ public sealed class Collector : Statement.IVisitor
 		
 		semanticModel.ExitScope();
 	}
+	
+	private static AccessModifier GetAccessModifier(SyntaxToken? modifierToken, AccessModifier @default)
+	{
+		if (modifierToken is null)
+			return @default;
+
+		return modifierToken.Type switch
+		{
+			SyntaxTokenType.Public    => AccessModifier.Public,
+			SyntaxTokenType.Private   => AccessModifier.Private,
+			SyntaxTokenType.Protected => AccessModifier.Protected,
+			SyntaxTokenType.Internal  => AccessModifier.Internal,
+			_                         => @default
+		};
+	}
 
 	public void VisitClassStatement(Statement.Class statement)
 	{
+		static ClassModifier GetClassModifier(SyntaxToken? modifierToken)
+		{
+			if (modifierToken is null)
+				return ClassModifier.None;
+
+			return modifierToken.Type switch
+			{
+				SyntaxTokenType.Global   => ClassModifier.Global,
+				SyntaxTokenType.Final    => ClassModifier.Final,
+				SyntaxTokenType.Template => ClassModifier.Template,
+				_                        => ClassModifier.None
+			};
+		}
+		
 		try
 		{
+			var classModifier = GetClassModifier(statement.ClassModifier);
+			var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Internal);
 			var declaration = new Declaration(statement.NameToken, statement);
-			var symbol = semanticModel.AddClass(statement.NameToken.Text, declaration);
+			var symbol = semanticModel.AddClass(statement.NameToken.Text, declaration, classModifier, accessModifier);
 			semanticModel.VisitSymbol(symbol);
 			semanticModel.EnterScope(statement);
 
@@ -102,10 +134,24 @@ public sealed class Collector : Statement.IVisitor
 
 	public void VisitStructStatement(Statement.Struct statement)
 	{
+		static StructModifier GetStructModifier(SyntaxToken? modifierToken)
+		{
+			if (modifierToken is null)
+				return StructModifier.None;
+			
+			return modifierToken.Type switch
+			{
+				SyntaxTokenType.Immutable => StructModifier.Immutable,
+				_                         => StructModifier.None
+			};
+		}
+		
 		try
 		{
+			var structModifier = GetStructModifier(statement.StructModifier);
+			var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Internal);
 			var declaration = new Declaration(statement.NameToken, statement);
-			var symbol = semanticModel.AddStruct(statement.NameToken.Text, declaration);
+			var symbol = semanticModel.AddStruct(statement.NameToken.Text, declaration, structModifier, accessModifier);
 			semanticModel.VisitSymbol(symbol);
 			semanticModel.EnterScope(statement);
 
@@ -127,8 +173,9 @@ public sealed class Collector : Statement.IVisitor
 	{
 		try
 		{
+			var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Internal);
 			var declaration = new Declaration(statement.NameToken, statement);
-			semanticModel.AddInterface(statement.NameToken.Text, declaration);
+			semanticModel.AddInterface(statement.NameToken.Text, declaration, accessModifier);
 		}
 		catch (Exception e)
 		{
@@ -140,8 +187,9 @@ public sealed class Collector : Statement.IVisitor
 	{
 		try
 		{
+			var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Internal);
 			var declaration = new Declaration(statement.NameToken, statement);
-			var enumSymbol = semanticModel.AddEnum(statement.NameToken.Text, declaration);
+			var enumSymbol = semanticModel.AddEnum(statement.NameToken.Text, declaration, accessModifier, statement.Type);
 			foreach (var member in statement.Members)
 			{
 				if (enumSymbol.AddMember(member.Identifier.Text) is { } enumMemberSymbol)
@@ -197,8 +245,9 @@ public sealed class Collector : Statement.IVisitor
 	{
 		try
 		{
+			var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Private);
 			var declaration = new Declaration(statement.ConstructorToken, statement);
-			var constructorSymbol = semanticModel.AddConstructor(statement.ConstructorToken.Text, declaration);
+			var constructorSymbol = semanticModel.AddConstructor(statement.ConstructorToken.Text, declaration, accessModifier);
 
 			semanticModel.EnterScope(statement);
 			foreach (var parameter in statement.ParameterList)
@@ -237,13 +286,28 @@ public sealed class Collector : Statement.IVisitor
 	{
 		
 	}
+	
+	private static EventModifier GetEventModifier(SyntaxToken? modifierToken)
+	{
+		if (modifierToken is null)
+			return EventModifier.None;
+			
+		return modifierToken.Type switch
+		{
+			SyntaxTokenType.Global => EventModifier.Global,
+			_                      => EventModifier.None
+		};
+	}
 
 	public void VisitEventStatement(Statement.Event statement)
 	{
 		try
 		{
+			var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Private);
+			var eventModifier = GetEventModifier(statement.EventModifier);
 			var declaration = new Declaration(statement.NameToken, statement);
-			var eventSymbol = semanticModel.AddEvent(statement.NameToken.Text, declaration);
+			var eventSymbol =
+				semanticModel.AddEvent(statement.NameToken.Text, declaration, accessModifier, eventModifier);
 
 			foreach (var parameter in statement.ParameterList)
 			{
@@ -262,8 +326,10 @@ public sealed class Collector : Statement.IVisitor
 	{
 		try
 		{
+			var eventModifier = GetEventModifier(statement.EventModifier);
 			var declaration = new Declaration(statement.NameToken, statement);
-			var eventSymbol = semanticModel.AddEvent(statement.NameToken.Text, declaration);
+			var eventSymbol = semanticModel.AddEvent(statement.NameToken.Text, declaration, AccessModifier.Public,
+				eventModifier);
 
 			foreach (var parameter in statement.ParameterList)
 			{
@@ -278,12 +344,38 @@ public sealed class Collector : Statement.IVisitor
 		}
 	}
 
+	private static IEnumerable<MethodModifier> GetMethodModifiers(IEnumerable<SyntaxToken> tokens)
+	{
+		foreach (var token in tokens)
+		{
+			switch (token.Type)
+			{
+				case SyntaxTokenType.Global:
+					yield return MethodModifier.Global;
+					break;
+				case SyntaxTokenType.Immutable:
+					yield return MethodModifier.Immutable;
+					break;
+				case SyntaxTokenType.Prototype:
+					yield return MethodModifier.Prototype;
+					break;
+				case SyntaxTokenType.Required:
+					yield return MethodModifier.Required;
+					break;
+				default:
+					continue;
+			}
+		}
+	}
+
 	public void VisitPropertyStatement(Statement.Property statement)
 	{
 		try
 		{
+			var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Private);
+			var methodModifiers = GetMethodModifiers(statement.Modifiers);
 			var declaration = new Declaration(statement.NameToken, statement);
-			semanticModel.AddProperty(statement.NameToken.Text, declaration);
+			semanticModel.AddProperty(statement.NameToken.Text, declaration, accessModifier, methodModifiers);
 		}
 		catch (Exception e)
 		{
@@ -295,8 +387,9 @@ public sealed class Collector : Statement.IVisitor
 	{
 		try
 		{
+			var methodModifiers = GetMethodModifiers(statement.Modifiers);
 			var declaration = new Declaration(statement.NameToken, statement);
-			semanticModel.AddProperty(statement.NameToken.Text, declaration);
+			semanticModel.AddProperty(statement.NameToken.Text, declaration, AccessModifier.Public, methodModifiers);
 		}
 		catch (Exception e)
 		{
@@ -308,8 +401,11 @@ public sealed class Collector : Statement.IVisitor
 	{
 		try
 		{
+			var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Private);
+			var methodModifiers = GetMethodModifiers(statement.Modifiers);
 			var declaration = new Declaration(statement.NameToken, statement);
-			var methodSymbol = semanticModel.AddMethod(statement.NameToken.Text, declaration);
+			var methodSymbol =
+				semanticModel.AddMethod(statement.NameToken.Text, declaration, accessModifier, methodModifiers);
 
 			semanticModel.EnterScope(statement);
 			foreach (var parameter in statement.ParameterList)
@@ -333,8 +429,10 @@ public sealed class Collector : Statement.IVisitor
 	{
 		try
 		{
+			var methodModifiers = GetMethodModifiers(statement.Modifiers);
 			var declaration = new Declaration(statement.NameToken, statement);
-			var methodSymbol = semanticModel.AddMethod(statement.NameToken.Text, declaration);
+			var methodSymbol = semanticModel.AddMethod(statement.NameToken.Text, declaration, AccessModifier.Public,
+				methodModifiers);
 
 			semanticModel.EnterScope(statement);
 			foreach (var parameter in statement.ParameterList)
@@ -353,10 +451,39 @@ public sealed class Collector : Statement.IVisitor
 
 	public void VisitFieldStatement(Statement.Field statement)
 	{
+		static IEnumerable<FieldModifier> GetFieldModifiers(IEnumerable<SyntaxToken> tokens)
+		{
+			foreach (var token in tokens)
+			{
+				switch (token.Type)
+				{
+					case SyntaxTokenType.Global:
+						yield return FieldModifier.Global;
+						break;
+					case SyntaxTokenType.Immutable:
+						yield return FieldModifier.Immutable;
+						break;
+					case SyntaxTokenType.Final:
+						yield return FieldModifier.Final;
+						break;
+					case SyntaxTokenType.Constant:
+						yield return FieldModifier.Constant;
+						break;
+					case SyntaxTokenType.Fixed:
+						yield return FieldModifier.Fixed;
+						break;
+					default:
+						continue;
+				}
+			}
+		}
+		
 		try
 		{
+			var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Private);
+			var fieldModifiers = GetFieldModifiers(statement.Modifiers);
 			var declaration = new Declaration(statement.NameToken, statement);
-			semanticModel.AddField(statement.NameToken.Text, declaration);
+			semanticModel.AddField(statement.NameToken.Text, declaration, accessModifier, fieldModifiers);
 		}
 		catch (Exception e)
 		{
@@ -510,7 +637,11 @@ public sealed class Collector : Statement.IVisitor
 			var parameters = string.Join(", ", statement.ParameterList);
 			var name = $"[{statement.OperatorTokens}] {statement.ReturnType} ({parameters})";
 
-			var methodSymbol = semanticModel.AddMethod(name, declaration);
+			var modifiers = statement.Immutable
+				? new[] { MethodModifier.Global, MethodModifier.Immutable }
+				: new[] { MethodModifier.Global };
+			
+			var methodSymbol = semanticModel.AddMethod(name, declaration, AccessModifier.Public, modifiers);
 
 			semanticModel.EnterScope(statement);
 			foreach (var parameter in statement.ParameterList)
@@ -537,8 +668,12 @@ public sealed class Collector : Statement.IVisitor
 			// @TODO Add support for TokenSpan in Declaration
 			var declaration = new Declaration(statement.OperatorTokens.Tokens[0], statement);
 			var name = $"[{statement.OperatorTokens}] {statement.ReturnType}";
-
-			var methodSymbol = semanticModel.AddMethod(name, declaration);
+			
+			var modifiers = statement.Immutable
+				? new[] { MethodModifier.Global, MethodModifier.Immutable }
+				: new[] { MethodModifier.Global };
+			
+			var methodSymbol = semanticModel.AddMethod(name, declaration, AccessModifier.Public, modifiers);
 
 			semanticModel.EnterScope(statement);
 			foreach (var parameter in statement.ParameterList)

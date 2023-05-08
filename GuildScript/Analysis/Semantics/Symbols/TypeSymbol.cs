@@ -2,18 +2,21 @@ namespace GuildScript.Analysis.Semantics.Symbols;
 
 public abstract class TypeSymbol : Symbol
 {
+	public AccessModifier AccessModifier { get; }
 	protected Declaration? Declaration { get; }
 	protected readonly Dictionary<string, TypeSymbol> nestedTypes = new();
 	protected readonly Dictionary<string, MemberSymbol> members = new();
 	
-	protected TypeSymbol(string name) : base(name)
+	protected TypeSymbol(string name, AccessModifier accessModifier) : base(name)
 	{
+		AccessModifier = accessModifier;
 		Declaration = null;
 	}
 	
-	protected TypeSymbol(string name, Declaration declaration) : base(name)
+	protected TypeSymbol(string name, Declaration declaration, AccessModifier accessModifier) : base(name)
 	{
 		Declaration = declaration;
+		AccessModifier = accessModifier;
 	}
 
 	public void NestType(TypeSymbol type)
@@ -94,7 +97,7 @@ public abstract class TypeSymbol : Symbol
 
 public sealed class NativeTypeSymbol : TypeSymbol
 {
-	private NativeTypeSymbol(string name) : base(name)
+	private NativeTypeSymbol(string name) : base(name, AccessModifier.Public)
 	{
 	}
 	

@@ -95,9 +95,10 @@ public sealed class SemanticModel
 		return globalModules.TryGetValue(name, out var existingModule) ? existingModule : null;
 	}
 
-	public ClassSymbol AddClass(string name, Declaration declaration)
+	public ClassSymbol AddClass(string name, Declaration declaration, ClassModifier classModifier,
+								AccessModifier accessModifier)
 	{
-		var symbol = new ClassSymbol(name, declaration);
+		var symbol = new ClassSymbol(name, declaration, classModifier, accessModifier);
 		symbols.Add(symbol);
 		typeSymbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
@@ -114,9 +115,10 @@ public sealed class SemanticModel
 		}
 	}
 
-	public StructSymbol AddStruct(string name, Declaration declaration)
+	public StructSymbol AddStruct(string name, Declaration declaration, StructModifier structModifier,
+								  AccessModifier accessModifier)
 	{
-		var symbol = new StructSymbol(name, declaration);
+		var symbol = new StructSymbol(name, declaration, structModifier, accessModifier);
 		symbols.Add(symbol);
 		typeSymbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
@@ -133,9 +135,10 @@ public sealed class SemanticModel
 		}
 	}
 
-	public EnumSymbol AddEnum(string name, Declaration declaration)
+	public EnumSymbol AddEnum(string name, Declaration declaration, AccessModifier accessModifier,
+							  TypeSyntax baseType)
 	{
-		var symbol = new EnumSymbol(name, declaration);
+		var symbol = new EnumSymbol(name, declaration, accessModifier, baseType);
 		symbols.Add(symbol);
 		typeSymbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
@@ -152,9 +155,9 @@ public sealed class SemanticModel
 		}
 	}
 
-	public InterfaceSymbol AddInterface(string name, Declaration declaration)
+	public InterfaceSymbol AddInterface(string name, Declaration declaration, AccessModifier accessModifier)
 	{
-		var symbol = new InterfaceSymbol(name, declaration);
+		var symbol = new InterfaceSymbol(name, declaration, accessModifier);
 		symbols.Add(symbol);
 		typeSymbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
@@ -171,9 +174,10 @@ public sealed class SemanticModel
 		}
 	}
 
-	public FieldSymbol AddField(string name, Declaration declaration)
+	public FieldSymbol AddField(string name, Declaration declaration, AccessModifier accessModifier,
+								IEnumerable<FieldModifier> fieldModifiers)
 	{
-		var symbol = new FieldSymbol(name, declaration);
+		var symbol = new FieldSymbol(name, declaration, accessModifier, fieldModifiers);
 		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
@@ -194,9 +198,10 @@ public sealed class SemanticModel
 		return symbol;
 	}
 
-	public PropertySymbol AddProperty(string name, Declaration declaration)
+	public PropertySymbol AddProperty(string name, Declaration declaration, AccessModifier accessModifier,
+									  IEnumerable<MethodModifier> methodModifiers)
 	{
-		var symbol = new PropertySymbol(name, declaration);
+		var symbol = new PropertySymbol(name, declaration, accessModifier, methodModifiers);
 		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
@@ -209,9 +214,10 @@ public sealed class SemanticModel
 		}
 	}
 
-	public MethodSymbol AddMethod(string name, Declaration declaration)
+	public MethodSymbol AddMethod(string name, Declaration declaration, AccessModifier accessModifier,
+								  IEnumerable<MethodModifier> methodModifiers)
 	{
-		var symbol = new MethodSymbol(name, declaration);
+		var symbol = new MethodSymbol(name, declaration, accessModifier, methodModifiers);
 		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
@@ -224,9 +230,10 @@ public sealed class SemanticModel
 		}
 	}
 
-	public EventSymbol AddEvent(string name, Declaration declaration)
+	public EventSymbol AddEvent(string name, Declaration declaration, AccessModifier accessModifier,
+								EventModifier eventModifier)
 	{
-		var symbol = new EventSymbol(name, declaration);
+		var symbol = new EventSymbol(name, declaration, accessModifier, eventModifier);
 		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
@@ -254,9 +261,9 @@ public sealed class SemanticModel
 		}
 	}
 
-	public ConstructorSymbol AddConstructor(string name, Declaration declaration)
+	public ConstructorSymbol AddConstructor(string name, Declaration declaration, AccessModifier accessModifier)
 	{
-		var symbol = new ConstructorSymbol(name, declaration);
+		var symbol = new ConstructorSymbol(name, declaration, accessModifier);
 		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
@@ -286,7 +293,8 @@ public sealed class SemanticModel
 
 	public MethodSymbol AddEntryPoint(Statement.EntryPoint statement)
 	{
-		var symbol = new MethodSymbol(statement.Identifier.Text, new Declaration(statement.Identifier, statement));
+		var symbol = new MethodSymbol(statement.Identifier.Text, new Declaration(statement.Identifier, statement),
+			AccessModifier.Public, Array.Empty<MethodModifier>());
 		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		EntryPoints.Add(symbol);
