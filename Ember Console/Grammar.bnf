@@ -47,11 +47,13 @@
 <lock-statement> 				-> "lock" "(" <expression> ")" <statement>
 <field-declaration>				-> <access-modifier>? <field-modifier>* <type> <identifier> ("=" <expression>)? ";"
 <method-declaration>			-> <access-modifier>? <async-modifier>? <method-modifier>* <type> <identifier> <template-params>? "(" <parameter-list>? ")" <block>
+<operator-overload-declaration> -> "[" <operator> "]" <type> "(" <parameter-list>? ")" <block>
 <property-declaration>			-> <access-modifier>? <method-modifier>* <type> <identifier> "{" <property-accessor>* "}"
 <constructor-declaration>		-> <access-modifier>? "constructor" "(" <parameter-list>? ")" <constructor-initializer>? <block>
 <destructor-declaration>		-> "destructor" "(" ")" <block>
 <method-signature>				-> <method-modifier>? <type> <identifier> <template-params>? "(" <parameter-list>? ")" ";"
 <property-signature>			-> <method-modifier>? <type> <identifier> "{" <property-accessor-signature>* "}"
+<operator-overload-signature>   -> "[" <operator> "]" <type> "(" <parameter-list>? ")" ";"
 <base-type>						-> <int-type> | <real-type> | "char" | "string" | "bool" | "void" | "object"
 <local-var-declaration>			-> (<type> | "var") <identifier> ("=" <expression>)?
 

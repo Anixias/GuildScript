@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using GuildScript.Analysis.Text;
 
 namespace GuildScript.Analysis.Syntax;
 
@@ -207,13 +208,22 @@ public class LambdaTypeSyntax : TypeSyntax
 {
 	public override bool IsNullable => false;
 
+	public TextSpan Span { get; }
 	public IReadOnlyList<TypeSyntax> InputTypes { get; }
 	public TypeSyntax? OutputType { get; }
 
-	public LambdaTypeSyntax(IEnumerable<TypeSyntax> inputTypes, TypeSyntax? outputType = null)
+	public LambdaTypeSyntax(IEnumerable<TypeSyntax> inputTypes, TextSpan span)
+	{
+		Span = span;
+		InputTypes = inputTypes.ToImmutableArray();
+		OutputType = null;
+	}
+
+	public LambdaTypeSyntax(IEnumerable<TypeSyntax> inputTypes, TypeSyntax? outputType, TextSpan span)
 	{
 		InputTypes = inputTypes.ToImmutableArray();
 		OutputType = outputType;
+		Span = span;
 	}
 	
 	public override string ToString()

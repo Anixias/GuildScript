@@ -1404,7 +1404,7 @@ public class TreePrinter : Expression.IVisitor, Statement.IVisitor
 		PushIndent();
 		IsLastChild = false;
 		Write("Return Type: " + statement.ReturnType);
-		Write("Operator: " + statement.BinaryOperator);
+		Write("Operator: " + statement.OperatorTokens);
 		
 		Write("Parameters:");
 		
@@ -1422,6 +1422,31 @@ public class TreePrinter : Expression.IVisitor, Statement.IVisitor
 		Write("Body:");
 		PushIndent();
 		Print(statement.Body);
+		PopIndent();
+		
+		PopIndent();
+	}
+
+	public void VisitOperatorOverloadSignatureStatement(Statement.OperatorOverloadSignature statement)
+	{
+		Write("Operator Overload");
+		
+		PushIndent();
+		IsLastChild = false;
+		Write("Return Type: " + statement.ReturnType);
+		Write("Operator: " + statement.OperatorTokens);
+		
+		IsLastChild = true;
+		Write("Parameters:");
+		
+		PushIndent();
+		for (var i = 0; i < statement.ParameterList.Length; i++)
+		{
+			var parameter = statement.ParameterList[i];
+			IsLastChild = i == statement.ParameterList.Length - 1;
+			
+			Write((parameter.IsReference ? "ref " : "") + parameter.Type + " " + parameter.Name.Text);
+		}
 		PopIndent();
 		
 		PopIndent();

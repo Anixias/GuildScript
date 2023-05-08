@@ -329,6 +329,7 @@ public sealed class Resolver : Statement.IVisitor, Expression.IVisitor
 			return;
 		
 		fieldSymbol.Type = ResolveType(statement.Type);
+		fieldSymbol.Resolved = true;
 	}
 
 	public void VisitBreakStatement(Statement.Break statement)
@@ -412,6 +413,11 @@ public sealed class Resolver : Statement.IVisitor, Expression.IVisitor
 	}
 
 	public void VisitOperatorOverloadStatement(Statement.OperatorOverload statement)
+	{
+		
+	}
+
+	public void VisitOperatorOverloadSignatureStatement(Statement.OperatorOverloadSignature statement)
 	{
 		
 	}

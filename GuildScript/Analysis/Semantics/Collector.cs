@@ -51,7 +51,7 @@ public sealed class Collector : Statement.IVisitor
 		foreach (var parameter in statement.ParameterList)
 		{
 			var parameterDeclaration = new Declaration(parameter.Name, statement);
-			entryPointSymbol.AddParameter(parameter.Name.Text, parameterDeclaration);
+			entryPointSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
 		}
 		
 		statement.Body.AcceptVisitor(this);
@@ -180,7 +180,7 @@ public sealed class Collector : Statement.IVisitor
 			foreach (var parameter in statement.ParameterList)
 			{
 				var parameterDeclaration = new Declaration(parameter.Name, statement);
-				externalMethodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration);
+				externalMethodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
 			}
 			semanticModel.ExitScope();
 		}
@@ -201,7 +201,7 @@ public sealed class Collector : Statement.IVisitor
 			foreach (var parameter in statement.ParameterList)
 			{
 				var parameterDeclaration = new Declaration(parameter.Name, statement);
-				constructorSymbol.AddParameter(parameter.Name.Text, parameterDeclaration);
+				constructorSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
 			}
 			
 			statement.Body.AcceptVisitor(this);
@@ -244,7 +244,7 @@ public sealed class Collector : Statement.IVisitor
 			foreach (var parameter in statement.ParameterList)
 			{
 				var parameterDeclaration = new Declaration(parameter.Name, statement);
-				eventSymbol.AddParameter(parameter.Name.Text, parameterDeclaration);
+				eventSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
 			}
 		}
 		catch (Exception e)
@@ -263,7 +263,7 @@ public sealed class Collector : Statement.IVisitor
 			foreach (var parameter in statement.ParameterList)
 			{
 				var parameterDeclaration = new Declaration(parameter.Name, statement);
-				eventSymbol.AddParameter(parameter.Name.Text, parameterDeclaration);
+				eventSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
 			}
 		}
 		catch (Exception e)
@@ -309,7 +309,7 @@ public sealed class Collector : Statement.IVisitor
 			foreach (var parameter in statement.ParameterList)
 			{
 				var parameterDeclaration = new Declaration(parameter.Name, statement);
-				methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration);
+				methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
 			}
 			
 			statement.Body.AcceptVisitor(this);
@@ -333,7 +333,7 @@ public sealed class Collector : Statement.IVisitor
 			foreach (var parameter in statement.ParameterList)
 			{
 				var parameterDeclaration = new Declaration(parameter.Name, statement);
-				methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration);
+				methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
 			}
 			semanticModel.ExitScope();
 		}
@@ -497,14 +497,18 @@ public sealed class Collector : Statement.IVisitor
 		try
 		{
 			// @TODO Add support for TokenSpan in Declaration
-			var declaration = new Declaration(statement.BinaryOperator.TokenSpan.Tokens[0], statement);
-			var methodSymbol = semanticModel.AddMethod(statement.BinaryOperator.ToString(), declaration);
+			var declaration = new Declaration(statement.OperatorTokens.Tokens[0], statement);
+
+			var parameters = string.Join(", ", statement.ParameterList);
+			var name = $"[{statement.OperatorTokens}] {statement.ReturnType} ({parameters})";
+
+			var methodSymbol = semanticModel.AddMethod(name, declaration);
 
 			semanticModel.EnterScope(statement);
 			foreach (var parameter in statement.ParameterList)
 			{
 				var parameterDeclaration = new Declaration(parameter.Name, statement);
-				methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration);
+				methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
 			}
 			
 			statement.Body.AcceptVisitor(this);
@@ -513,7 +517,31 @@ public sealed class Collector : Statement.IVisitor
 		}
 		catch (Exception e)
 		{
-			Diagnostics.ReportTypeCollectorException(statement.BinaryOperator.TokenSpan.Tokens[0], e.Message);
+			Diagnostics.ReportTypeCollectorException(statement.OperatorTokens.Tokens[0], e.Message);
+		}
+	}
+
+	public void VisitOperatorOverloadSignatureStatement(Statement.OperatorOverloadSignature statement)
+	{
+		try
+		{
+			// @TODO Add support for TokenSpan in Declaration
+			var declaration = new Declaration(statement.OperatorTokens.Tokens[0], statement);
+			var name = $"[{statement.OperatorTokens}] {statement.ReturnType}";
+
+			var methodSymbol = semanticModel.AddMethod(name, declaration);
+
+			semanticModel.EnterScope(statement);
+			foreach (var parameter in statement.ParameterList)
+			{
+				var parameterDeclaration = new Declaration(parameter.Name, statement);
+				methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
+			}
+			semanticModel.ExitScope();
+		}
+		catch (Exception e)
+		{
+			Diagnostics.ReportTypeCollectorException(statement.OperatorTokens.Tokens[0], e.Message);
 		}
 	}
 }

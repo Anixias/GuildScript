@@ -2,10 +2,10 @@ namespace GuildScript.Analysis.Text;
 
 public class Diagnostic
 {
-	public TextSpan Span { get; }
+	public TextSpan? Span { get; }
 	public string Message { get; }
 
-	public Diagnostic(TextSpan span, string message)
+	public Diagnostic(TextSpan? span, string message)
 	{
 		Span = span;
 		Message = message;
@@ -13,6 +13,6 @@ public class Diagnostic
 
 	public override string ToString()
 	{
-		return Message;
+		return Span is null ? Message : $"[{Span.Line}:{Span.Column}] {Message}";
 	}
 }

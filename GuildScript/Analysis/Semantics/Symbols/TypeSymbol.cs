@@ -45,6 +45,51 @@ public abstract class TypeSymbol : Symbol
 	{
 		return members.TryGetValue(name, out var member) ? member : null;
 	}
+	
+	public bool InheritsFrom(TypeSymbol ancestor)
+	{
+		// All types implicitly inherit from Object
+		if (ancestor == NativeTypeSymbol.Object)
+			return true;
+
+		if (this == ancestor)
+			return true;
+
+		// Only classes can inherit (excluding inheriting from Object)
+		if (this is not ClassSymbol classSymbol)
+			return false;
+
+		// Only classes and interfaces can be inherited
+		switch (ancestor)
+		{
+			case ClassSymbol ancestorClass:
+			{
+				var baseClass = classSymbol.BaseClass;
+				while (baseClass is not null)
+				{
+					if (baseClass == ancestorClass)
+						return true;
+
+					baseClass = baseClass.BaseClass;
+				}
+			}
+				break;
+			case InterfaceSymbol ancestorInterface:
+			{
+				var baseClass = classSymbol;
+				while (baseClass is not null)
+				{
+					if (baseClass.ImplementsInterface(ancestorInterface))
+						return true;
+
+					baseClass = baseClass.BaseClass;
+				}
+			}
+				break;
+		}
+
+		return false;
+	}
 }
 
 public sealed class NativeTypeSymbol : TypeSymbol

@@ -19,10 +19,6 @@ class Room
 
 class Player
 {
-	class Nested
-	{
-	}
-	
 	public string Name { get; private set; }
 	private Room currentRoom;
 	public Room.RoomType favoriteRoom;
@@ -53,8 +49,8 @@ entry int Main(int arg1, string arg2, Player arg3)
 	// Create player
 	var player = new Player
 	{
-		Name = "John",
-		CurrentRoom = room1
+		Name = "Collin",
+		currentRoom = room1
 	};
 
 	Console.WriteLine("Welcome to the text adventure game, " + player.Name + "!");

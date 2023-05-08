@@ -12,16 +12,16 @@ public sealed class Lexer
 	private char Current => Peek();
 	private char Next => Peek(1);
 	private int Length => position - start;
-	private TextSpan Span => new(start, Length);
+	private TextSpan Span => new(start, Length, source);
 
 	private int start;
 	private SyntaxTokenType type;
-	private string Text => source.Substring(start, Length);
+	private string Text => source.Span(Span);
 	private object? value;
 	private int position;
-	private readonly string source;
+	private readonly SourceText source;
 
-	public Lexer(string source)
+	public Lexer(SourceText source)
 	{
 		Diagnostics = new DiagnosticCollection();
 		this.source = source;
@@ -40,7 +40,7 @@ public sealed class Lexer
 		if (index < 0 || index >= source.Length)
 			return '\0';
 
-		return source[index];
+		return source.CharAt(index);
 	}
 
 	public SyntaxToken ScanToken()
@@ -49,7 +49,7 @@ public sealed class Lexer
 		
 		if (EndOfFile)
 		{
-			return new SyntaxToken(SyntaxTokenType.EndOfFile, "\0", null, new TextSpan(position, 0));
+			return new SyntaxToken(SyntaxTokenType.EndOfFile, "\0", null, new TextSpan(position, 0, source));
 		}
 		
 		Reset();
@@ -494,7 +494,7 @@ public sealed class Lexer
 		Advance();
 		type = SyntaxTokenType.Invalid;
 
-		Diagnostics.ReportScannerInvalidCharacter(new TextSpan(start, Length), invalidCharacter);
+		Diagnostics.ReportLexerInvalidCharacter(new TextSpan(start, Length, source), invalidCharacter);
 	}
 
 	private void ScanNumber()
@@ -663,7 +663,7 @@ public sealed class Lexer
 
 		if (text.Length != 1)
 		{
-			Diagnostics.ReportScannerInvalidCharacterConstant(new TextSpan(start, Length), text);
+			Diagnostics.ReportLexerInvalidCharacterConstant(new TextSpan(start, Length, source), text);
 		}
 	}
 }

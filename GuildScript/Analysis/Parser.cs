@@ -15,9 +15,11 @@ public sealed class Parser
 
 	private readonly ImmutableArray<SyntaxToken> tokens;
 	private int position;
+	private readonly SourceText source;
 
-	public Parser(string source)
+	public Parser(SourceText source)
 	{
+		this.source = source;
 		Diagnostics = new DiagnosticCollection();
 		var scanner = new Lexer(source);
 		tokens = ParseTokens(scanner);
@@ -41,15 +43,16 @@ public sealed class Parser
 
 	public ParseException Error(string message)
 	{
-		var errorMessage = "Error at " + (EndOfFile ? "end: " : $"'{Peek().Text}': ") + message;
+		var errorToken = Peek();
+		var errorMessage = $"Error at {(EndOfFile ? "end: " : $"'{errorToken.Text}': ")}{message}";
 
 		if (suppressErrors)
 			return new ParseException(errorMessage);
 		
-		//Diagnostics.Report(errorMessage);
-		Console.ForegroundColor = ConsoleColor.DarkRed;
-		Console.WriteLine(errorMessage);
-		Console.ResetColor();
+		Diagnostics.ReportParserError(errorToken.Span, errorMessage);
+		//Console.ForegroundColor = ConsoleColor.DarkRed;
+		//Console.WriteLine(errorMessage);
+		//Console.ResetColor();
 
 		return new ParseException(errorMessage);
 	}
@@ -824,6 +827,7 @@ public sealed class Parser
 
 	private LambdaTypeSyntax ParseLambdaType()
 	{
+		var spanStart = Peek().Span.Start;
 		Consume(SyntaxTokenType.OpenSquare);
 
 		var inputTypes = new List<TypeSyntax>();
@@ -846,38 +850,42 @@ public sealed class Parser
 			Consume(SyntaxTokenType.OpenSquare);
 			var outputType = ParseType();
 			Consume(SyntaxTokenType.CloseSquare);
+			var spanEnd = Peek().Span.End;
 			
-			return new LambdaTypeSyntax(inputTypes, outputType);
+			return new LambdaTypeSyntax(inputTypes, outputType, new TextSpan(spanStart, spanEnd - spanStart, source));
 		}
 		
 		Consume(SyntaxTokenType.RightTriangle);
-		return new LambdaTypeSyntax(inputTypes);
+		var spanLength = Peek().Span.End - spanStart;
+		var span = new TextSpan(spanStart, spanLength, source);
+		return new LambdaTypeSyntax(inputTypes, span);
 	}
 
 	private TypeSyntax ParseNamedType()
 	{
 		TypeSyntax? type = Next.Type switch
 		{
-			SyntaxTokenType.Int8       => TypeSyntax.Int8,
-			SyntaxTokenType.UInt8      => TypeSyntax.UInt8,
-			SyntaxTokenType.Int16      => TypeSyntax.Int16,
-			SyntaxTokenType.UInt16     => TypeSyntax.UInt16,
-			SyntaxTokenType.Int32      => TypeSyntax.Int32,
-			SyntaxTokenType.UInt32     => TypeSyntax.UInt32,
-			SyntaxTokenType.Int64      => TypeSyntax.Int64,
-			SyntaxTokenType.UInt64     => TypeSyntax.UInt64,
-			SyntaxTokenType.String     => TypeSyntax.String,
-			SyntaxTokenType.Single     => TypeSyntax.Single,
-			SyntaxTokenType.Double     => TypeSyntax.Double,
-			SyntaxTokenType.Bool       => TypeSyntax.Bool,
-			SyntaxTokenType.Char       => TypeSyntax.Char,
-			SyntaxTokenType.Object     => TypeSyntax.Object,
-			//SyntaxTokenType.Identifier => new NamedTypeSyntax(Next.Text, false),
-			_                          => null
+			SyntaxTokenType.Int8   => TypeSyntax.Int8,
+			SyntaxTokenType.UInt8  => TypeSyntax.UInt8,
+			SyntaxTokenType.Int16  => TypeSyntax.Int16,
+			SyntaxTokenType.UInt16 => TypeSyntax.UInt16,
+			SyntaxTokenType.Int32  => TypeSyntax.Int32,
+			SyntaxTokenType.UInt32 => TypeSyntax.UInt32,
+			SyntaxTokenType.Int64  => TypeSyntax.Int64,
+			SyntaxTokenType.UInt64 => TypeSyntax.UInt64,
+			SyntaxTokenType.String => TypeSyntax.String,
+			SyntaxTokenType.Single => TypeSyntax.Single,
+			SyntaxTokenType.Double => TypeSyntax.Double,
+			SyntaxTokenType.Bool   => TypeSyntax.Bool,
+			SyntaxTokenType.Char   => TypeSyntax.Char,
+			SyntaxTokenType.Object => TypeSyntax.Object,
+			//SyntaxTokenType.Identifier => new NamedTypeSyntax(Next.Text),
+			//_                          => TypeSyntax.Inferred
+			_ => null
 		};
 
 		if (type is null)
-			return new ExpressionTypeSyntax(ParsePrimaryExpression());
+			return new ExpressionTypeSyntax(ParseTypeExpression());
 		
 		Advance();
 		return type;
@@ -1034,6 +1042,11 @@ public sealed class Parser
 
 	private Statement ParseInterfaceMember()
 	{
+		if (IsOperatorOverload())
+		{
+			return ParseOperatorOverloadSignature();
+		}
+		
 		var peek = 0;
 		var continuePeek = true;
 		
@@ -1046,6 +1059,8 @@ public sealed class Parser
 					return ParsePropertySignature();
 				case SyntaxTokenType.OpenParen:
 					return ParseMethodSignature();
+				case SyntaxTokenType.Event:
+					return ParseEventSignature();
 				case SyntaxTokenType.EndOfFile:
 					continuePeek = false;
 					break;
@@ -1054,7 +1069,7 @@ public sealed class Parser
 			}
 		}
 
-		throw Error("Expected member.");
+		throw Error("Expected interface member.");
 	}
 
 	private Statement.Destructor ParseDestructor(SyntaxToken destructorToken)
@@ -1160,6 +1175,31 @@ public sealed class Parser
 		Consume(SyntaxTokenType.Semicolon);
 
 		return new Statement.Event(accessModifier, eventModifier, identifier, parameterList);
+	}
+	
+	private Statement.EventSignature ParseEventSignature()
+	{
+		SyntaxToken? eventModifier = null;
+
+		if (Match(out var modifierToken, SyntaxTokenType.Global))
+		{
+			eventModifier = modifierToken;
+		}
+
+		Consume(SyntaxTokenType.Event);
+		var identifier = Consume(SyntaxTokenType.Identifier);
+		Consume(SyntaxTokenType.OpenParen);
+
+		var parameterList = new List<Variable>();
+		if (!Check(SyntaxTokenType.CloseParen))
+		{
+			parameterList.AddRange(ParseParameterList());
+		}
+		
+		Consume(SyntaxTokenType.CloseParen);
+		Consume(SyntaxTokenType.Semicolon);
+
+		return new Statement.EventSignature(eventModifier, identifier, parameterList);
 	}
 
 	private IEnumerable<SyntaxToken> ParseMethodModifiers()
@@ -1290,8 +1330,37 @@ public sealed class Parser
 		Consume(SyntaxTokenType.CloseParen);
 
 		var body = ParseBlock();
-		var @operator = new BinaryOperator(new SyntaxTokenSpan(operatorTokens));
+		var @operator = new SyntaxTokenSpan(operatorTokens);
 		return new Statement.OperatorOverload(returnType, @operator, parameterList, body);
+	}
+
+	private Statement.OperatorOverloadSignature ParseOperatorOverloadSignature()
+	{
+		Consume(SyntaxTokenType.OpenSquare);
+
+		var operatorTokens = new List<SyntaxToken>();
+		while (!EndOfFile && !Check(SyntaxTokenType.CloseSquare))
+		{
+			operatorTokens.Add(Advance());
+		}
+		
+		Consume(SyntaxTokenType.CloseSquare);
+		
+		var returnType = ParseType();
+		if (returnType is null)
+			throw Error("Operator overloads must have a return type.");
+		
+		Consume(SyntaxTokenType.OpenParen);
+		var parameterList = new List<Variable>();
+		if (!Check(SyntaxTokenType.CloseParen))
+		{
+			parameterList.AddRange(ParseParameterList());
+		}
+		Consume(SyntaxTokenType.CloseParen);
+		Consume(SyntaxTokenType.Semicolon);
+		
+		var @operator = new SyntaxTokenSpan(operatorTokens);
+		return new Statement.OperatorOverloadSignature(returnType, @operator, parameterList);
 	}
 
 	private Statement.MethodSignature ParseMethodSignature()
@@ -1692,6 +1761,21 @@ public sealed class Parser
 		
 		var operand = ParseUnaryExpression();
 		return new Expression.Unary(operand, operatorToken);
+	}
+
+	private Expression ParseTypeExpression()
+	{
+		// Qualifier.Identifier.Identifier...
+		var qualifier = ParseQualifier();
+		Expression type = new Expression.Qualifier(qualifier);
+
+		while (Match(out var dotToken, SyntaxTokenType.Dot))
+		{
+			var accessIdentifier = new Expression.Identifier(Consume(SyntaxTokenType.Identifier));
+			type = new Expression.Binary(type, new BinaryOperator(dotToken), accessIdentifier);
+		}
+
+		return type;
 	}
 
 	private Expression ParsePrimaryExpression()

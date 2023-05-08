@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using GuildScript.Analysis.Text;
 
 namespace GuildScript.Analysis.Syntax;
 
@@ -45,6 +46,7 @@ public abstract class Statement : SyntaxNode
 		void VisitSwitchStatement(Switch statement);
 		void VisitExpressionStatement(ExpressionStatement statement);
 		void VisitOperatorOverloadStatement(OperatorOverload statement);
+		void VisitOperatorOverloadSignatureStatement(OperatorOverloadSignature statement);
 	}
 	
 	public abstract void AcceptVisitor(IVisitor visitor);
@@ -510,16 +512,16 @@ public abstract class Statement : SyntaxNode
 	public sealed class OperatorOverload : Statement
 	{
 		public TypeSyntax ReturnType { get; }
-		public BinaryOperator BinaryOperator { get; }
+		public SyntaxTokenSpan OperatorTokens { get; }
 		public ImmutableArray<Variable> ParameterList { get; }
 		public Statement Body { get; }
 
-		public OperatorOverload(TypeSyntax returnType, BinaryOperator binaryOperator, IEnumerable<Variable> parameterList,
-								Statement body)
+		public OperatorOverload(TypeSyntax returnType, SyntaxTokenSpan operatorTokens,
+								IEnumerable<Variable> parameterList, Statement body)
 
 		{
 			ReturnType = returnType;
-			BinaryOperator = binaryOperator;
+			OperatorTokens = operatorTokens;
 			ParameterList = parameterList.ToImmutableArray();
 			Body = body;
 		}
@@ -527,6 +529,27 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitOperatorOverloadStatement(this);
+		}
+	}
+
+	public sealed class OperatorOverloadSignature : Statement
+	{
+		public TypeSyntax ReturnType { get; }
+		public SyntaxTokenSpan OperatorTokens { get; }
+		public ImmutableArray<Variable> ParameterList { get; }
+
+		public OperatorOverloadSignature(TypeSyntax returnType, SyntaxTokenSpan operatorTokens, 
+										 IEnumerable<Variable> parameterList)
+
+		{
+			ReturnType = returnType;
+			OperatorTokens = operatorTokens;
+			ParameterList = parameterList.ToImmutableArray();
+		}
+
+		public override void AcceptVisitor(IVisitor visitor)
+		{
+			visitor.VisitOperatorOverloadSignatureStatement(this);
 		}
 	}
 

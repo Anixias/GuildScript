@@ -12,6 +12,11 @@ public class DiagnosticCollection : IEnumerable<Diagnostic>, IEnumerable
 		diagnostics.Add(new Diagnostic(span, message));
 	}
 	
+	private void Report(string message)
+	{
+		diagnostics.Add(new Diagnostic(null, message));
+	}
+	
 	public IEnumerator<Diagnostic> GetEnumerator()
 	{
 		return diagnostics.GetEnumerator();
@@ -27,27 +32,32 @@ public class DiagnosticCollection : IEnumerable<Diagnostic>, IEnumerable
 		diagnostics.AddRange(diagnosticCollection.diagnostics);
 	}
 
-	public void ReportScannerInvalidCharacter(TextSpan span, char invalidCharacter)
+	public void ReportLexerInvalidCharacter(TextSpan span, char invalidCharacter)
 	{
-		var message = $"Invalid character '{invalidCharacter}'.";
+		var message = $"[Lexer] Invalid character '{invalidCharacter}'.";
 		Report(span, message);
 	}
 
-	public void ReportScannerInvalidCharacterConstant(TextSpan span, string text)
+	public void ReportLexerInvalidCharacterConstant(TextSpan span, string text)
 	{
-		var message = $"Invalid character constant '{text}'.";
+		var message = $"[Lexer] Invalid character constant '{text}'.";
 		Report(span, message);
 	}
 
 	public void ReportParserExpectedExpression(TextSpan span, SyntaxToken token)
 	{
-		var message = $"Expected expression at '{token.Text}'.";
+		var message = $"[Parser] Expected expression at '{token.Text}'.";
 		Report(span, message);
 	}
 
 	public void ReportTypeCollectorException(SyntaxToken identifier, string message)
 	{
 		Report(identifier.Span, message);
+	}
+
+	public void ReportTypeCollectorException(TextSpan span, string message)
+	{
+		Report(span, message);
 	}
 
 	public void ReportNameResolverDuplicateDeclaration(SyntaxToken identifier)
@@ -65,12 +75,17 @@ public class DiagnosticCollection : IEnumerable<Diagnostic>, IEnumerable
 	public void ReportNameResolverEntryPointNotDefined()
 	{
 		const string message = "Entry point must be defined.";
-		Report(new TextSpan(0, 0), message);
+		Report(message);
 	}
 
 	public void ReportNameResolveEntryPointRedefined(SyntaxToken identifier)
 	{
 		const string message = "Entry point is already defined.";
 		Report(identifier.Span, message);
+	}
+
+	public void ReportParserError(TextSpan span, string message)
+	{
+		Report(span, $"[Parser] {message}");
 	}
 }

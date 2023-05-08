@@ -16,4 +16,9 @@ public sealed class Variable
 		IsReference = isReference;
 		Initializer = initializer;
 	}
+
+	public override string ToString()
+	{
+		return $"{Type} {Name.Text}";
+	}
 }

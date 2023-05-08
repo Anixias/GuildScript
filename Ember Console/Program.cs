@@ -2,6 +2,7 @@
 using GuildScript.Analysis;
 using GuildScript.Analysis.Semantics;
 using GuildScript.Analysis.Syntax;
+using GuildScript.Analysis.Text;
 
 if (args.Length == 0)
 {
@@ -65,7 +66,8 @@ void ShowPrompt()
 		if (string.IsNullOrWhiteSpace(input))
 			break;
 
-		var parser = new Parser(input);
+		var source = new SourceText(input);
+		var parser = new Parser(source);
 
 		try
 		{
@@ -103,7 +105,8 @@ void ShowPrompt()
 SyntaxTree? AnalyzeFile(string path, SemanticModel semanticModel)
 {
 	var input = File.ReadAllText(path);
-	var parser = new Parser(input);
+	var source = new SourceText(input);
+	var parser = new Parser(source);
 	var collector = new Collector(semanticModel);
 
 	try

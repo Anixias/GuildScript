@@ -2,9 +2,11 @@ namespace GuildScript.Analysis.Semantics.Symbols;
 
 public sealed class ParameterSymbol : LocalSymbol
 {
-	public ResolvedType? Type { get; set; } = null;
+	public ResolvedType? Type { get; set; }
+	public bool IsReference { get; }
 	
-	public ParameterSymbol(string name, Declaration declaration) : base(name, declaration)
+	public ParameterSymbol(string name, Declaration declaration, bool isReference) : base(name, declaration)
 	{
+		IsReference = isReference;
 	}
 }

@@ -8,9 +8,9 @@ public sealed class EventSymbol : MemberSymbol
 	{
 	}
 
-	public ParameterSymbol AddParameter(string name, Declaration declaration)
+	public ParameterSymbol AddParameter(string name, Declaration declaration, bool isReference)
 	{
-		var parameter = new ParameterSymbol(name, declaration);
+		var parameter = new ParameterSymbol(name, declaration, isReference);
 		parameters.Add(parameter);
 		return parameter;
 	}

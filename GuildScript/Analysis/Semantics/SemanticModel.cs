@@ -5,6 +5,20 @@ namespace GuildScript.Analysis.Semantics;
 
 public sealed class SemanticModel
 {
+	private struct LambdaTypeData
+	{
+		public LambdaTypeSyntax lambdaTypeSyntax;
+		public Symbol? symbol;
+		public Scope? scope;
+
+		public LambdaTypeData(LambdaTypeSyntax lambdaTypeSyntax, Symbol? symbol, Scope? scope)
+		{
+			this.lambdaTypeSyntax = lambdaTypeSyntax;
+			this.symbol = symbol;
+			this.scope = scope;
+		}
+	}
+	
 	public IEnumerable<TypeSymbol> TypeSymbols => typeSymbols;
 
 	private List<MethodSymbol> EntryPoints { get; } = new();
@@ -15,6 +29,7 @@ public sealed class SemanticModel
 	private readonly Dictionary<string, ModuleSymbol> globalModules = new();
 	private readonly Dictionary<SyntaxNode, Scope> scopes = new();
 	private readonly List<TypeSymbol> typeSymbols = new();
+	private readonly List<LambdaTypeData> lambdaTypeQueue = new();
 
 	public SemanticModel()
 	{
@@ -38,6 +53,17 @@ public sealed class SemanticModel
 	public void ExitScope()
 	{
 		scopeStack.Pop();
+	}
+
+	public void ResolveLambdas()
+	{
+		while (lambdaTypeQueue.Count > 0)
+		{
+			var data = lambdaTypeQueue[0];
+			lambdaTypeQueue.RemoveAt(0);
+			
+			
+		}
 	}
 
 	public ModuleSymbol AddModule(string name)
@@ -251,6 +277,11 @@ public sealed class SemanticModel
 		return symbol;
 	}
 
+	public void AddLambdaType(LambdaTypeSyntax type)
+	{
+		lambdaTypeQueue.Add(new LambdaTypeData(type, CurrentSymbol, CurrentScope));
+	}
+
 	public void VerifyEntryPoint()
 	{
 		switch (EntryPoints.Count)
@@ -285,7 +316,10 @@ public sealed class SemanticModel
 
 	public Symbol? FindSymbol(string name)
 	{
-		return CurrentScope?.FindSymbol(name);
+		if (CurrentScope?.FindSymbol(name) is { } symbol)
+			return symbol;
+
+		return CurrentSymbol?.GetChild(name);
 	}
 
 	public MethodSymbol GetEntryPoint()

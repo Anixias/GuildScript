@@ -2,7 +2,7 @@ namespace GuildScript.Analysis.Semantics.Symbols;
 
 public sealed class ClassSymbol : TypeSymbol
 {
-	private readonly ClassSymbol? baseClass;
+	public ClassSymbol? BaseClass { get; }
 	private readonly List<InterfaceSymbol> interfaces = new();
 	
 	public ClassSymbol(string name, Declaration declaration) : this(name, null, declaration)
@@ -11,7 +11,7 @@ public sealed class ClassSymbol : TypeSymbol
 	
 	public ClassSymbol(string name, ClassSymbol? baseClass, Declaration declaration) : base(name, declaration)
 	{
-		this.baseClass = baseClass;
+		BaseClass = baseClass;
 	}
 	
 	public void AddInterface(InterfaceSymbol symbol)
@@ -20,13 +20,18 @@ public sealed class ClassSymbol : TypeSymbol
 			interfaces.Add(symbol);
 	}
 
+	public bool ImplementsInterface(InterfaceSymbol symbol)
+	{
+		return interfaces.Contains(symbol);
+	}
+
 	public override Symbol? FindMember(string name)
 	{
 		if (members.TryGetValue(name, out var member))
 			return member;
 
-		if (baseClass is not null)
-			return baseClass.FindMember(name);
+		if (BaseClass is not null)
+			return BaseClass.FindMember(name);
 		
 		foreach (var @interface in interfaces)
 		{
