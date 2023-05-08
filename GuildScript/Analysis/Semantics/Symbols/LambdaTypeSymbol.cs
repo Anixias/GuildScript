@@ -4,20 +4,20 @@ namespace GuildScript.Analysis.Semantics.Symbols;
 
 public sealed class LambdaTypeSymbol : TypeSymbol
 {
-	public ImmutableArray<ResolvedType> ParameterTypes { get; }
-	public ResolvedType? ReturnType { get; }
-	
-	public LambdaTypeSymbol(IEnumerable<ResolvedType> parameterTypes, ResolvedType? returnType)
+	public List<ResolvedType> ParameterTypes { get; }
+	public ResolvedType? ReturnType { get; set; }
+
+	public LambdaTypeSymbol(List<ResolvedType> parameterTypes, ResolvedType? returnType)
 		: base(BuildName(parameterTypes, returnType))
 	{
-		ParameterTypes = parameterTypes.ToImmutableArray();
+		ParameterTypes = parameterTypes;
 		ReturnType = returnType;
 	}
 
-	public LambdaTypeSymbol(IEnumerable<ResolvedType> parameterTypes, ResolvedType? returnType,
-		Declaration declaration) : base(BuildName(parameterTypes, returnType), declaration)
+	public LambdaTypeSymbol(List<ResolvedType> parameterTypes, ResolvedType? returnType,
+							Declaration declaration) : base(BuildName(parameterTypes, returnType), declaration)
 	{
-		ParameterTypes = parameterTypes.ToImmutableArray();
+		ParameterTypes = parameterTypes;
 		ReturnType = returnType;
 	}
 

@@ -51,7 +51,8 @@ public sealed class Collector : Statement.IVisitor
 		foreach (var parameter in statement.ParameterList)
 		{
 			var parameterDeclaration = new Declaration(parameter.Name, statement);
-			entryPointSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
+			semanticModel.AddSymbol(entryPointSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
+				parameter.IsReference));
 		}
 		
 		statement.Body.AcceptVisitor(this);
@@ -61,7 +62,7 @@ public sealed class Collector : Statement.IVisitor
 
 	public void VisitDefineStatement(Statement.Define statement)
 	{
-		
+		semanticModel.AddDefine(statement);
 	}
 
 	public void VisitBlockStatement(Statement.Block statement)
@@ -143,7 +144,8 @@ public sealed class Collector : Statement.IVisitor
 			var enumSymbol = semanticModel.AddEnum(statement.NameToken.Text, declaration);
 			foreach (var member in statement.Members)
 			{
-				enumSymbol.AddMember(member.Identifier.Text);
+				if (enumSymbol.AddMember(member.Identifier.Text) is { } enumMemberSymbol)
+					semanticModel.AddSymbol(enumMemberSymbol);
 			}
 		}
 		catch (Exception e)
@@ -180,7 +182,8 @@ public sealed class Collector : Statement.IVisitor
 			foreach (var parameter in statement.ParameterList)
 			{
 				var parameterDeclaration = new Declaration(parameter.Name, statement);
-				externalMethodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
+				semanticModel.AddSymbol(externalMethodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
+					parameter.IsReference));
 			}
 			semanticModel.ExitScope();
 		}
@@ -201,7 +204,8 @@ public sealed class Collector : Statement.IVisitor
 			foreach (var parameter in statement.ParameterList)
 			{
 				var parameterDeclaration = new Declaration(parameter.Name, statement);
-				constructorSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
+				semanticModel.AddSymbol(constructorSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
+					parameter.IsReference));
 			}
 			
 			statement.Body.AcceptVisitor(this);
@@ -244,7 +248,8 @@ public sealed class Collector : Statement.IVisitor
 			foreach (var parameter in statement.ParameterList)
 			{
 				var parameterDeclaration = new Declaration(parameter.Name, statement);
-				eventSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
+				semanticModel.AddSymbol(eventSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
+					parameter.IsReference));
 			}
 		}
 		catch (Exception e)
@@ -263,7 +268,8 @@ public sealed class Collector : Statement.IVisitor
 			foreach (var parameter in statement.ParameterList)
 			{
 				var parameterDeclaration = new Declaration(parameter.Name, statement);
-				eventSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
+				semanticModel.AddSymbol(eventSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
+					parameter.IsReference));
 			}
 		}
 		catch (Exception e)
@@ -309,7 +315,8 @@ public sealed class Collector : Statement.IVisitor
 			foreach (var parameter in statement.ParameterList)
 			{
 				var parameterDeclaration = new Declaration(parameter.Name, statement);
-				methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
+				semanticModel.AddSymbol(methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
+					parameter.IsReference));
 			}
 			
 			statement.Body.AcceptVisitor(this);
@@ -333,7 +340,8 @@ public sealed class Collector : Statement.IVisitor
 			foreach (var parameter in statement.ParameterList)
 			{
 				var parameterDeclaration = new Declaration(parameter.Name, statement);
-				methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
+				semanticModel.AddSymbol(methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
+					parameter.IsReference));
 			}
 			semanticModel.ExitScope();
 		}
@@ -508,7 +516,8 @@ public sealed class Collector : Statement.IVisitor
 			foreach (var parameter in statement.ParameterList)
 			{
 				var parameterDeclaration = new Declaration(parameter.Name, statement);
-				methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
+				semanticModel.AddSymbol(methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
+					parameter.IsReference));
 			}
 			
 			statement.Body.AcceptVisitor(this);
@@ -535,7 +544,8 @@ public sealed class Collector : Statement.IVisitor
 			foreach (var parameter in statement.ParameterList)
 			{
 				var parameterDeclaration = new Declaration(parameter.Name, statement);
-				methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration, parameter.IsReference);
+				semanticModel.AddSymbol(methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
+					parameter.IsReference));
 			}
 			semanticModel.ExitScope();
 		}

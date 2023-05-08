@@ -6,13 +6,16 @@ public sealed class EnumSymbol : TypeSymbol
 	{
 	}
 
-	public bool AddMember(string name)
+	public EnumMemberSymbol? AddMember(string name)
 	{
+		if (Declaration is null)
+			return null;
+		
 		var member = new EnumMemberSymbol(name, Declaration);
 		if (!AddChild(member))
-			return false;
+			return null;
 		
 		members.Add(member.Name, member);
-		return true;
+		return member;
 	}
 }

@@ -168,8 +168,6 @@ void LinkTree(SyntaxTree tree, SemanticModel semanticModel)
 {
 	var resolver = new Resolver(semanticModel);
 	resolver.Resolve(tree);
-	//var nameResolver = new NameResolver(semanticModel);
-	//nameResolver.Resolve(tree.Root);
 }
 
 void CompileFolder()
@@ -201,7 +199,10 @@ void CompileFolder()
 	{
 		LinkTree(tree, semanticModel);
 	}
-	
+
+	var resolver = new Resolver(semanticModel);
+	resolver.ReplaceAliases();
+
 	/*nameResolver.Finish();
 	
 	Console.ForegroundColor = ConsoleColor.DarkRed;

@@ -1,3 +1,4 @@
+using System.Collections;
 using GuildScript.Analysis.Semantics.Symbols;
 using GuildScript.Analysis.Syntax;
 
@@ -21,6 +22,7 @@ public sealed class SemanticModel
 	
 	public IEnumerable<TypeSymbol> TypeSymbols => typeSymbols;
 
+	private readonly List<Symbol> symbols = new();
 	private List<MethodSymbol> EntryPoints { get; } = new();
 	private Symbol? CurrentSymbol => symbolStack.TryPeek(out var symbol) ? symbol : null;
 	private Scope? CurrentScope => scopeStack.TryPeek(out var scope) ? scope : null;
@@ -62,7 +64,7 @@ public sealed class SemanticModel
 			var data = lambdaTypeQueue[0];
 			lambdaTypeQueue.RemoveAt(0);
 			
-			
+			// @TODO
 		}
 	}
 
@@ -79,6 +81,7 @@ public sealed class SemanticModel
 		var globalModuleSymbol = new ModuleSymbol(name);
 		CurrentScope?.AddSymbol(globalModuleSymbol);
 		globalModules.Add(name, globalModuleSymbol);
+		symbols.Add(globalModuleSymbol);
 		return globalModuleSymbol;
 	}
 
@@ -95,6 +98,7 @@ public sealed class SemanticModel
 	public ClassSymbol AddClass(string name, Declaration declaration)
 	{
 		var symbol = new ClassSymbol(name, declaration);
+		symbols.Add(symbol);
 		typeSymbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
@@ -113,6 +117,7 @@ public sealed class SemanticModel
 	public StructSymbol AddStruct(string name, Declaration declaration)
 	{
 		var symbol = new StructSymbol(name, declaration);
+		symbols.Add(symbol);
 		typeSymbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
@@ -131,6 +136,7 @@ public sealed class SemanticModel
 	public EnumSymbol AddEnum(string name, Declaration declaration)
 	{
 		var symbol = new EnumSymbol(name, declaration);
+		symbols.Add(symbol);
 		typeSymbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
@@ -149,6 +155,7 @@ public sealed class SemanticModel
 	public InterfaceSymbol AddInterface(string name, Declaration declaration)
 	{
 		var symbol = new InterfaceSymbol(name, declaration);
+		symbols.Add(symbol);
 		typeSymbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
@@ -167,6 +174,7 @@ public sealed class SemanticModel
 	public FieldSymbol AddField(string name, Declaration declaration)
 	{
 		var symbol = new FieldSymbol(name, declaration);
+		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
@@ -181,6 +189,7 @@ public sealed class SemanticModel
 	public LocalVariableSymbol AddLocalVariable(string name, Declaration declaration, TypeSyntax? typeSyntax)
 	{
 		var symbol = new LocalVariableSymbol(name, declaration, typeSyntax);
+		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		return symbol;
 	}
@@ -188,6 +197,7 @@ public sealed class SemanticModel
 	public PropertySymbol AddProperty(string name, Declaration declaration)
 	{
 		var symbol = new PropertySymbol(name, declaration);
+		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
@@ -202,6 +212,7 @@ public sealed class SemanticModel
 	public MethodSymbol AddMethod(string name, Declaration declaration)
 	{
 		var symbol = new MethodSymbol(name, declaration);
+		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
@@ -216,6 +227,7 @@ public sealed class SemanticModel
 	public EventSymbol AddEvent(string name, Declaration declaration)
 	{
 		var symbol = new EventSymbol(name, declaration);
+		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
@@ -230,6 +242,7 @@ public sealed class SemanticModel
 	public ExternalMethodSymbol AddExternalMethod(string name, Declaration declaration)
 	{
 		var symbol = new ExternalMethodSymbol(name, declaration);
+		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
@@ -244,6 +257,7 @@ public sealed class SemanticModel
 	public ConstructorSymbol AddConstructor(string name, Declaration declaration)
 	{
 		var symbol = new ConstructorSymbol(name, declaration);
+		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
@@ -258,6 +272,7 @@ public sealed class SemanticModel
 	public DestructorSymbol AddDestructor(string name, Declaration declaration)
 	{
 		var symbol = new DestructorSymbol(name, declaration);
+		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
 		{
@@ -272,9 +287,28 @@ public sealed class SemanticModel
 	public MethodSymbol AddEntryPoint(Statement.EntryPoint statement)
 	{
 		var symbol = new MethodSymbol(statement.Identifier.Text, new Declaration(statement.Identifier, statement));
+		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		EntryPoints.Add(symbol);
 		return symbol;
+	}
+
+	public DefineSymbol AddDefine(Statement.Define statement)
+	{
+		var symbol = new DefineSymbol(statement.Identifier.Text, new Declaration(statement.Identifier, statement));
+		symbols.Add(symbol);
+		CurrentScope?.AddSymbol(symbol);
+		switch (CurrentSymbol)
+		{
+			case ModuleSymbol module:
+				module.AddType(symbol);
+				return symbol;
+			case TypeSymbol type:
+				type.NestType(symbol);
+				return symbol;
+			default:
+				throw new Exception("Cannot declare define statements in global scope.");
+		}
 	}
 
 	public void AddLambdaType(LambdaTypeSyntax type)
@@ -325,5 +359,15 @@ public sealed class SemanticModel
 	public MethodSymbol GetEntryPoint()
 	{
 		return EntryPoints[0];
+	}
+
+	public IEnumerable<Symbol> GetAllSymbols()
+	{
+		return symbols;
+	}
+
+	public void AddSymbol(Symbol symbol)
+	{
+		symbols.Add(symbol);
 	}
 }

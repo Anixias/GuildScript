@@ -36,6 +36,74 @@ public sealed class Resolver : Statement.IVisitor, Expression.IVisitor
 		}
 	}
 
+	public void ReplaceAliases()
+	{
+		foreach (var symbol in semanticModel.GetAllSymbols())
+		{
+			switch (symbol)
+			{
+				case ParameterSymbol parameterSymbol:
+					parameterSymbol.Type = ResolveTypeAlias(parameterSymbol.Type);
+					break;
+				case FieldSymbol fieldSymbol:
+					fieldSymbol.Type = ResolveTypeAlias(fieldSymbol.Type);
+					break;
+				case LocalVariableSymbol variableSymbol:
+					variableSymbol.Type = ResolveTypeAlias(variableSymbol.Type);
+					break;
+				case LambdaTypeSymbol lambdaTypeSymbol:
+					lambdaTypeSymbol.ReturnType = ResolveTypeAlias(lambdaTypeSymbol.ReturnType);
+					for (var i = 0; i < lambdaTypeSymbol.ParameterTypes.Count; i++)
+					{
+						lambdaTypeSymbol.ParameterTypes[i] = ResolveTypeAlias(lambdaTypeSymbol.ParameterTypes[i])!;
+					}
+					break;
+				case MethodSymbol methodSymbol:
+					methodSymbol.ReturnType = ResolveTypeAlias(methodSymbol.ReturnType);
+					break;
+				case PropertySymbol propertySymbol:
+					propertySymbol.Type = ResolveTypeAlias(propertySymbol.Type);
+					break;
+			}
+		}
+	}
+
+	private ResolvedType? ResolveTypeAlias(ResolvedType? type)
+	{
+		if (type is null)
+			return null;
+		
+		switch (type)
+		{
+			case SimpleResolvedType { TypeSymbol: DefineSymbol defineSymbol }:
+				return ResolveTypeAlias(defineSymbol.AliasedType);
+			case ArrayResolvedType arrayResolvedType:
+				var resolvedElementType = ResolveTypeAlias(arrayResolvedType.ElementType);
+				if (resolvedElementType != arrayResolvedType.ElementType)
+				{
+					return new ArrayResolvedType(resolvedElementType!);
+				}
+
+				break;
+			case NullableResolvedType nullableResolvedType:
+				var resolvedBaseType = ResolveTypeAlias(nullableResolvedType.BaseType);
+				if (resolvedBaseType != nullableResolvedType.BaseType)
+				{
+					return new NullableResolvedType(resolvedBaseType!);
+				}
+
+				break;
+			case TemplatedResolvedType templatedResolvedType:
+				var resolvedTemplateBaseType = ResolveTypeAlias(templatedResolvedType.BaseType);
+				var resolvedTemplateArguments = templatedResolvedType.TypeArguments.Select(ResolveTypeAlias).ToArray();
+				if (!templatedResolvedType.TypeArguments.SequenceEqual(resolvedTemplateArguments))
+					return new TemplatedResolvedType(resolvedTemplateBaseType!, resolvedTemplateArguments!);
+				break;
+		}
+
+		return type;
+	}
+
 	private ResolvedType? ResolveType(TypeSyntax typeSyntax)
 	{
 		switch (typeSyntax)
@@ -187,7 +255,15 @@ public sealed class Resolver : Statement.IVisitor, Expression.IVisitor
 
 	public void VisitDefineStatement(Statement.Define statement)
 	{
+		var symbol = semanticModel.FindSymbol(statement.Identifier.Text);
+		if (symbol is not DefineSymbol defineSymbol)
+			throw new Exception($"Failed to resolve definition '{statement.Identifier.Text}'.");
+
+		if (statement.Type is null)
+			return;
 		
+		defineSymbol.AliasedType = ResolveType(statement.Type);
+		defineSymbol.Resolved = true;
 	}
 
 	public void VisitBlockStatement(Statement.Block statement)
@@ -330,6 +406,8 @@ public sealed class Resolver : Statement.IVisitor, Expression.IVisitor
 		
 		fieldSymbol.Type = ResolveType(statement.Type);
 		fieldSymbol.Resolved = true;
+
+		
 	}
 
 	public void VisitBreakStatement(Statement.Break statement)
