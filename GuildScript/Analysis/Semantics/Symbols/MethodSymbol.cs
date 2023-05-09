@@ -37,5 +37,10 @@ public sealed class MethodSymbol : MemberSymbol
 		parameter.Type = type;
 		parameter.Resolved = true;
 	}
+
+	public IEnumerable<ParameterSymbol> GetParameters()
+	{
+		return parameters.Values;
+	}
 }
 

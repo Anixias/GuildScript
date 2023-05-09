@@ -40,6 +40,45 @@ public abstract class TypeSymbol : Symbol
 			return;
 		}
 		
+		if (member is IndexerSymbol indexer)
+		{
+			if (AddChild(member) && members.TryAdd(member.Name, member))
+				return;
+			
+			if (children[member.Name] is IndexerSymbol existingMethod)
+			{
+				existingMethod.AddOverload(indexer);
+			}
+
+			return;
+		}
+		
+		if (member is ExternalMethodSymbol externalMethod)
+		{
+			if (AddChild(member) && members.TryAdd(member.Name, member))
+				return;
+			
+			if (children[member.Name] is ExternalMethodSymbol existingMethod)
+			{
+				existingMethod.AddOverload(externalMethod);
+			}
+
+			return;
+		}
+		
+		if (member is ConstructorSymbol constructor)
+		{
+			if (AddChild(member) && members.TryAdd(member.Name, member))
+				return;
+			
+			if (children[member.Name] is ConstructorSymbol existingMethod)
+			{
+				existingMethod.AddOverload(constructor);
+			}
+
+			return;
+		}
+		
 		if (!AddChild(member) || !members.TryAdd(member.Name, member))
 			throw new Exception($"The member '{member.Name}' is already declared in '{Name}'.");
 	}

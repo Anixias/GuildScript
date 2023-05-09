@@ -1,11 +1,14 @@
+using System.Collections.Immutable;
+
 namespace GuildScript.Analysis.Semantics.Symbols;
 
 public sealed class InterfaceSymbol : TypeSymbol
 {
 	private readonly List<InterfaceSymbol> interfaces = new();
+	public ImmutableArray<TemplateParameterSymbol> TemplateParameters { get; set; }
 
-	public InterfaceSymbol(string name, Declaration declaration, AccessModifier accessModifier) : base(name,
-		declaration, accessModifier)
+	public InterfaceSymbol(string name, Declaration declaration, AccessModifier accessModifier)
+		: base(name, declaration, accessModifier)
 	{
 	}
 	

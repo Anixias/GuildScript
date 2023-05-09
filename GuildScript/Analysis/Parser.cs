@@ -584,6 +584,8 @@ public sealed class Parser
 	private Statement.Interface ParseInterface(SyntaxToken? accessModifier)
 	{
 		var identifier = Consume(SyntaxTokenType.Identifier);
+		var typeParameters = ParseTypeParameters();
+		
 		Consume(SyntaxTokenType.OpenBrace);
 
 		var members = new List<Statement>();
@@ -594,7 +596,7 @@ public sealed class Parser
 		
 		Consume(SyntaxTokenType.CloseBrace);
 
-		return new Statement.Interface(accessModifier, identifier, members);
+		return new Statement.Interface(accessModifier, identifier, typeParameters, members);
 	}
 	
 	private Statement.Enum ParseEnum(SyntaxToken? accessModifier)
@@ -631,6 +633,8 @@ public sealed class Parser
 		var structModifier = Match(out var token, SyntaxTokenType.Immutable) ? token : null;
 		Consume(SyntaxTokenType.Struct);
 		var identifier = Consume(SyntaxTokenType.Identifier);
+		var typeParameters = ParseTypeParameters();
+		
 		Consume(SyntaxTokenType.OpenBrace);
 
 		var members = new List<Statement>();
@@ -641,7 +645,7 @@ public sealed class Parser
 		
 		Consume(SyntaxTokenType.CloseBrace);
 
-		return new Statement.Struct(accessModifier, structModifier, identifier, members);
+		return new Statement.Struct(accessModifier, structModifier, identifier, typeParameters, members);
 	}
 
 	private Statement.Class ParseClass(SyntaxToken? accessModifier)
@@ -653,17 +657,8 @@ public sealed class Parser
 		
 		Consume(SyntaxTokenType.Class);
 		var identifier = Consume(SyntaxTokenType.Identifier);
-		var typeParameters = new List<SyntaxToken>();
 
-		if (Match(SyntaxTokenType.LeftAngled))
-		{
-			do
-			{
-				typeParameters.Add(Consume(SyntaxTokenType.Identifier));
-			} while (Match(SyntaxTokenType.Comma));
-
-			Consume(SyntaxTokenType.RightAngled);
-		}
+		var typeParameters = ParseTypeParameters();
 
 		TypeSyntax? baseType = null;
 		if (Match(SyntaxTokenType.Colon))
@@ -682,6 +677,22 @@ public sealed class Parser
 		Consume(SyntaxTokenType.CloseBrace);
 
 		return new Statement.Class(accessModifier, classModifier, identifier, typeParameters, baseType, members);
+	}
+
+	private IEnumerable<SyntaxToken> ParseTypeParameters()
+	{
+		if (!Match(SyntaxTokenType.LeftAngled))
+			return Array.Empty<SyntaxToken>();
+		
+		var typeParameters = new List<SyntaxToken>();
+		do
+		{
+			typeParameters.Add(Consume(SyntaxTokenType.Identifier));
+		} while (Match(SyntaxTokenType.Comma));
+
+		Consume(SyntaxTokenType.RightAngled);
+
+		return typeParameters;
 	}
 
 	private bool IsOperatorOverload()
@@ -885,8 +896,6 @@ public sealed class Parser
 			SyntaxTokenType.Bool   => TypeSyntax.Bool,
 			SyntaxTokenType.Char   => TypeSyntax.Char,
 			SyntaxTokenType.Object => TypeSyntax.Object,
-			//SyntaxTokenType.Identifier => new NamedTypeSyntax(Next.Text),
-			//_                          => TypeSyntax.Inferred
 			_ => null
 		};
 
@@ -1136,7 +1145,7 @@ public sealed class Parser
 		if (type is null)
 			throw Error("Cannot use void as indexer type.");
 		
-		Consume(SyntaxTokenType.This);
+		var thisToken = Consume(SyntaxTokenType.This);
 		Consume(SyntaxTokenType.OpenSquare);
 
 		var parameterList = new List<Variable>();
@@ -1155,7 +1164,7 @@ public sealed class Parser
 		}
 
 		Consume(SyntaxTokenType.CloseBrace);
-		return new Statement.Indexer(accessModifier, type, parameterList, body);
+		return new Statement.Indexer(thisToken, accessModifier, type, parameterList, body);
 	}
 
 	private Statement.Event ParseEvent(SyntaxToken? accessModifier)

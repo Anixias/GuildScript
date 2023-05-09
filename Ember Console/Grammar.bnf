@@ -13,8 +13,8 @@
 <identifier>					-> [a-zA-Z_] ([a-zA-Z0-9_])*
 
 <class-declaration>				-> <access-modifier>? <class-modifier>* "class" <identifier> <template-params>? <inheritance>? "{" <member>* "}"
-<struct-declaration>			-> <access-modifier>? <struct-modifier>* "struct" <identifier> "{" <member>* "}"
-<interface-declaration>			-> <access-modifier>? "interface" <identifier> "{" <interface-member>* "}"
+<struct-declaration>			-> <access-modifier>? <struct-modifier>* "struct" <identifier> <template-params>? "{" <member>* "}"
+<interface-declaration>			-> <access-modifier>? "interface" <identifier> <template-params>? "{" <interface-member>* "}"
 <enum-declaration>				-> <access-modifier>? "enum" <identifier> "{" <enum-list>? "}"
 <parameter-list>				-> <parameter> ("," <parameter>)*
 <block>							-> "{" <statement>* "}"

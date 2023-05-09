@@ -21,7 +21,25 @@ public abstract class Expression : SyntaxNode
 		void VisitLambdaExpression(Lambda expression);
 	}
 	
+	public interface IVisitor<out T>
+	{
+		T VisitAwaitExpression(Await expression);
+		T VisitConditionalExpression(Conditional expression);
+		T VisitBinaryExpression(Binary expression);
+		T VisitTypeRelationExpression(TypeRelation expression);
+		T VisitUnaryExpression(Unary expression);
+		T VisitIdentifierExpression(Identifier expression);
+		T VisitQualifierExpression(Qualifier expression);
+		T VisitCallExpression(Call expression);
+		T VisitLiteralExpression(Literal expression);
+		T VisitInstantiateExpression(Instantiate expression);
+		T VisitCastExpression(Cast expression);
+		T VisitIndexExpression(Index expression);
+		T VisitLambdaExpression(Lambda expression);
+	}
+	
 	public abstract void AcceptVisitor(IVisitor visitor);
+	public abstract T AcceptVisitor<T>(IVisitor<T> visitor);
 
 	public sealed class Await : Expression
 	{
@@ -35,6 +53,11 @@ public abstract class Expression : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitAwaitExpression(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitAwaitExpression(this);
 		}
 
 		public override int GetHashCode()
@@ -60,7 +83,12 @@ public abstract class Expression : SyntaxNode
 		{
 			visitor.VisitConditionalExpression(this);
 		}
-		
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitConditionalExpression(this);
+		}
+
 		public override int GetHashCode()
 		{
 			var hash = 0;
@@ -88,7 +116,12 @@ public abstract class Expression : SyntaxNode
 		{
 			visitor.VisitBinaryExpression(this);
 		}
-		
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitBinaryExpression(this);
+		}
+
 		public override int GetHashCode()
 		{
 			var hash = 0;
@@ -118,7 +151,12 @@ public abstract class Expression : SyntaxNode
 		{
 			visitor.VisitTypeRelationExpression(this);
 		}
-		
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitTypeRelationExpression(this);
+		}
+
 		public override int GetHashCode()
 		{
 			var hash = 0;
@@ -147,7 +185,12 @@ public abstract class Expression : SyntaxNode
 		{
 			visitor.VisitUnaryExpression(this);
 		}
-		
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitUnaryExpression(this);
+		}
+
 		public override int GetHashCode()
 		{
 			var hash = 0;
@@ -170,6 +213,11 @@ public abstract class Expression : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitIdentifierExpression(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitIdentifierExpression(this);
 		}
 
 		public override string ToString()
@@ -195,6 +243,11 @@ public abstract class Expression : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitQualifierExpression(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitQualifierExpression(this);
 		}
 
 		public override string ToString()
@@ -225,7 +278,12 @@ public abstract class Expression : SyntaxNode
 		{
 			visitor.VisitCallExpression(this);
 		}
-		
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitCallExpression(this);
+		}
+
 		public override int GetHashCode()
 		{
 			var hash = Function.GetHashCode();
@@ -257,7 +315,12 @@ public abstract class Expression : SyntaxNode
 		{
 			visitor.VisitLiteralExpression(this);
 		}
-		
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitLiteralExpression(this);
+		}
+
 		public override int GetHashCode()
 		{
 			return Token.Text.GetHashCode();
@@ -289,7 +352,12 @@ public abstract class Expression : SyntaxNode
 		{
 			visitor.VisitInstantiateExpression(this);
 		}
-		
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitInstantiateExpression(this);
+		}
+
 		public override int GetHashCode()
 		{
 			var hash = InstanceType.GetHashCode();
@@ -325,7 +393,12 @@ public abstract class Expression : SyntaxNode
 		{
 			visitor.VisitCastExpression(this);
 		}
-		
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitCastExpression(this);
+		}
+
 		public override int GetHashCode()
 		{
 			var hash = 0;
@@ -353,7 +426,12 @@ public abstract class Expression : SyntaxNode
 		{
 			visitor.VisitIndexExpression(this);
 		}
-		
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitIndexExpression(this);
+		}
+
 		public override int GetHashCode()
 		{
 			var hash = 0;
@@ -381,7 +459,12 @@ public abstract class Expression : SyntaxNode
 		{
 			visitor.VisitLambdaExpression(this);
 		}
-		
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitLambdaExpression(this);
+		}
+
 		public override int GetHashCode()
 		{
 			var hash = 0;

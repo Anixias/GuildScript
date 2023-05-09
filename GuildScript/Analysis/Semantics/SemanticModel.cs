@@ -378,4 +378,28 @@ public sealed class SemanticModel
 	{
 		symbols.Add(symbol);
 	}
+
+	public TemplateParameterSymbol AddTemplateParameter(string name, Declaration declaration)
+	{
+		var symbol = new TemplateParameterSymbol(name, declaration);
+		
+		CurrentScope?.AddSymbol(symbol);
+		symbols.Add(symbol);
+		return symbol;
+	}
+
+	public IndexerSymbol AddIndexer(string name, Declaration declaration, AccessModifier accessModifier)
+	{
+		var symbol = new IndexerSymbol(name, declaration, accessModifier);
+		symbols.Add(symbol);
+		CurrentScope?.AddSymbol(symbol);
+		switch (CurrentSymbol)
+		{
+			case TypeSymbol type:
+				type.AddMember(symbol);
+				return symbol;
+			default:
+				throw new Exception("Cannot declare indexers outside of types.");
+		}
+	}
 }

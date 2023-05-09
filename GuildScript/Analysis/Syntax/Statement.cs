@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using GuildScript.Analysis.Text;
 
 namespace GuildScript.Analysis.Syntax;
 
@@ -49,7 +48,52 @@ public abstract class Statement : SyntaxNode
 		void VisitOperatorOverloadSignatureStatement(OperatorOverloadSignature statement);
 	}
 	
+	public interface IVisitor<out T>
+	{
+		T VisitProgramStatement(Program statement);
+		T VisitEntryPointStatement(EntryPoint statement);
+		T VisitDefineStatement(Define statement);
+		T VisitBlockStatement(Block statement);
+		T VisitClassStatement(Class statement);
+		T VisitStructStatement(Struct statement);
+		T VisitInterfaceStatement(Interface statement);
+		T VisitEnumStatement(Enum statement);
+		T VisitDestructorStatement(Destructor statement);
+		T VisitExternalMethodStatement(ExternalMethod statement);
+		T VisitConstructorStatement(Constructor statement);
+		T VisitIndexerStatement(Indexer statement);
+		T VisitAccessorTokenStatement(AccessorToken statement);
+		T VisitAccessorLambdaStatement(AccessorLambda statement);
+		T VisitAccessorLambdaSignatureStatement(AccessorLambdaSignature statement);
+		T VisitEventStatement(Event statement);
+		T VisitEventSignatureStatement(EventSignature statement);
+		T VisitPropertyStatement(Property statement);
+		T VisitPropertySignatureStatement(PropertySignature statement);
+		T VisitMethodStatement(Method statement);
+		T VisitMethodSignatureStatement(MethodSignature statement);
+		T VisitFieldStatement(Field statement);
+		T VisitBreakStatement(Break statement);
+		T VisitContinueStatement(Continue statement);
+		T VisitControlStatement(Control statement);
+		T VisitWhileStatement(While statement);
+		T VisitDoWhileStatement(DoWhile statement);
+		T VisitForStatement(For statement);
+		T VisitForEachStatement(ForEach statement);
+		T VisitRepeatStatement(Repeat statement);
+		T VisitReturnStatement(Return statement);
+		T VisitThrowStatement(Throw statement);
+		T VisitSealStatement(Seal statement);
+		T VisitTryStatement(Try statement);
+		T VisitVariableDeclarationStatement(VariableDeclaration statement);
+		T VisitLockStatement(Lock statement);
+		T VisitSwitchStatement(Switch statement);
+		T VisitExpressionStatement(ExpressionStatement statement);
+		T VisitOperatorOverloadStatement(OperatorOverload statement);
+		T VisitOperatorOverloadSignatureStatement(OperatorOverloadSignature statement);
+	}
+	
 	public abstract void AcceptVisitor(IVisitor visitor);
+	public abstract T AcceptVisitor<T>(IVisitor<T> visitor);
 
 	public sealed class Program : Statement
 	{
@@ -68,6 +112,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitProgramStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitProgramStatement(this);
+		}
 	}
 
 	public sealed class Define : Statement
@@ -84,6 +133,11 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitDefineStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitDefineStatement(this);
 		}
 	}
 
@@ -107,6 +161,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitEntryPointStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitEntryPointStatement(this);
+		}
 	}
 
 	public sealed class Block : Statement
@@ -121,6 +180,11 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitBlockStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitBlockStatement(this);
 		}
 	}
 
@@ -148,6 +212,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitClassStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitClassStatement(this);
+		}
 	}
 
 	public sealed class Struct : Statement
@@ -156,19 +225,26 @@ public abstract class Statement : SyntaxNode
 		public SyntaxToken? StructModifier { get; }
 		public SyntaxToken NameToken { get; }
 		public ImmutableArray<Statement> Members { get; }
+		public ImmutableArray<SyntaxToken> TypeParameters { get; }
 
 		public Struct(SyntaxToken? accessModifier, SyntaxToken? structModifier, SyntaxToken nameToken,
-					  IEnumerable<Statement> members)
+					  IEnumerable<SyntaxToken> typeParameters, IEnumerable<Statement> members)
 		{
 			AccessModifier = accessModifier;
 			StructModifier = structModifier;
 			NameToken = nameToken;
 			Members = members.ToImmutableArray();
+			TypeParameters = typeParameters.ToImmutableArray();
 		}
 		
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitStructStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitStructStatement(this);
 		}
 	}
 
@@ -177,17 +253,25 @@ public abstract class Statement : SyntaxNode
 		public SyntaxToken? AccessModifier { get; }
 		public SyntaxToken NameToken { get; }
 		public ImmutableArray<Statement> Members { get; }
+		public ImmutableArray<SyntaxToken> TypeParameters { get; }
 
-		public Interface(SyntaxToken? accessModifier, SyntaxToken nameToken, IEnumerable<Statement> members)
+		public Interface(SyntaxToken? accessModifier, SyntaxToken nameToken, IEnumerable<SyntaxToken> typeParameters,
+						 IEnumerable<Statement> members)
 		{
 			AccessModifier = accessModifier;
 			NameToken = nameToken;
 			Members = members.ToImmutableArray();
+			TypeParameters = typeParameters.ToImmutableArray();
 		}
 		
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitInterfaceStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitInterfaceStatement(this);
 		}
 	}
 
@@ -222,6 +306,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitEnumStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitEnumStatement(this);
+		}
 	}
 
 	public sealed class Destructor : Statement
@@ -238,6 +327,11 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitDestructorStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitDestructorStatement(this);
 		}
 	}
 
@@ -257,6 +351,11 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitExternalMethodStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitExternalMethodStatement(this);
 		}
 	}
 
@@ -284,18 +383,25 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitConstructorStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitConstructorStatement(this);
+		}
 	}
 
 	public sealed class Indexer : Statement
 	{
+		public SyntaxToken ThisToken { get; }
 		public SyntaxToken? AccessModifier { get; }
 		public TypeSyntax Type { get; }
 		public ImmutableArray<Variable> ParameterList { get; }
 		public ImmutableArray<Statement> Body { get; }
 
-		public Indexer(SyntaxToken? accessModifier, TypeSyntax type, IEnumerable<Variable> parameterList,
-					   IEnumerable<Statement> body)
+		public Indexer(SyntaxToken thisToken, SyntaxToken? accessModifier, TypeSyntax type,
+					   IEnumerable<Variable> parameterList, IEnumerable<Statement> body)
 		{
+			ThisToken = thisToken;
 			AccessModifier = accessModifier;
 			Type = type;
 			ParameterList = parameterList.ToImmutableArray();
@@ -305,6 +411,11 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitIndexerStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitIndexerStatement(this);
 		}
 	}
 
@@ -328,6 +439,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitEventStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitEventStatement(this);
+		}
 	}
 	
 	public sealed class EventSignature : Statement
@@ -346,6 +462,11 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitEventSignatureStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitEventSignatureStatement(this);
 		}
 	}
 
@@ -369,6 +490,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitAccessorTokenStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitAccessorTokenStatement(this);
+		}
 	}
 
 	public sealed class AccessorLambda : Accessor
@@ -386,6 +512,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitAccessorLambdaStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitAccessorLambdaStatement(this);
+		}
 	}
 
 	public sealed class AccessorLambdaSignature : Accessor
@@ -402,6 +533,11 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitAccessorLambdaSignatureStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitAccessorLambdaSignatureStatement(this);
 		}
 	}
 
@@ -427,6 +563,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitPropertyStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitPropertyStatement(this);
+		}
 	}
 
 	public sealed class PropertySignature : Statement
@@ -448,6 +589,11 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitPropertySignatureStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitPropertySignatureStatement(this);
 		}
 	}
 
@@ -480,6 +626,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitMethodStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitMethodStatement(this);
+		}
 	}
 
 	public sealed class MethodSignature : Statement
@@ -507,6 +658,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitMethodSignatureStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitMethodSignatureStatement(this);
+		}
 	}
 
 	public sealed class OperatorOverload : Statement
@@ -532,6 +688,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitOperatorOverloadStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitOperatorOverloadStatement(this);
+		}
 	}
 
 	public sealed class OperatorOverloadSignature : Statement
@@ -554,6 +715,11 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitOperatorOverloadSignatureStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitOperatorOverloadSignatureStatement(this);
 		}
 	}
 
@@ -579,6 +745,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitFieldStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitFieldStatement(this);
+		}
 	}
 
 	public sealed class Break : Statement
@@ -587,6 +758,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitBreakStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitBreakStatement(this);
+		}
 	}
 
 	public sealed class Continue : Statement
@@ -594,6 +770,11 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitContinueStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitContinueStatement(this);
 		}
 	}
 
@@ -614,6 +795,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitControlStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitControlStatement(this);
+		}
 	}
 
 	public sealed class While : Statement
@@ -631,6 +817,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitWhileStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitWhileStatement(this);
+		}
 	}
 
 	public sealed class DoWhile : Statement
@@ -647,6 +838,11 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitDoWhileStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitDoWhileStatement(this);
 		}
 	}
 
@@ -669,6 +865,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitForStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitForStatement(this);
+		}
 	}
 
 	public sealed class ForEach : Statement
@@ -690,6 +891,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitForEachStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitForEachStatement(this);
+		}
 	}
 
 	public sealed class Repeat : Statement
@@ -707,6 +913,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitRepeatStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitRepeatStatement(this);
+		}
 	}
 
 	public sealed class Return : Statement
@@ -721,6 +932,11 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitReturnStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitReturnStatement(this);
 		}
 	}
 
@@ -737,6 +953,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitThrowStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitThrowStatement(this);
+		}
 	}
 
 	public sealed class Seal : Statement
@@ -751,6 +972,11 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitSealStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitSealStatement(this);
 		}
 	}
 
@@ -776,6 +1002,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitTryStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitTryStatement(this);
+		}
 	}
 
 	public sealed class VariableDeclaration : Statement
@@ -795,6 +1026,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitVariableDeclarationStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitVariableDeclarationStatement(this);
+		}
 	}
 
 	public sealed class Lock : Statement
@@ -811,6 +1047,11 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitLockStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitLockStatement(this);
 		}
 	}
 
@@ -873,6 +1114,11 @@ public abstract class Statement : SyntaxNode
 		{
 			visitor.VisitSwitchStatement(this);
 		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitSwitchStatement(this);
+		}
 	}
 
 	public sealed class ExpressionStatement : Statement
@@ -887,6 +1133,11 @@ public abstract class Statement : SyntaxNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitExpressionStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitExpressionStatement(this);
 		}
 	}
 }

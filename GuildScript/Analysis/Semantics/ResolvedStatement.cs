@@ -47,6 +47,7 @@ public abstract class ResolvedStatement : ResolvedNode
 		void VisitSwitchStatement(Switch statement);
 		void VisitExpressionStatement(ExpressionStatement statement);
 		void VisitOperatorOverloadStatement(OperatorOverload statement);
+		void VisitOperatorOverloadSignatureStatement(OperatorOverloadSignature statement);
 	}
 	
 	public abstract void AcceptVisitor(IVisitor visitor);
@@ -127,12 +128,13 @@ public abstract class ResolvedStatement : ResolvedNode
 		public AccessModifier AccessModifier { get; }
 		public ClassModifier ClassModifier { get; }
 		public ClassSymbol ClassSymbol { get; }
-		public ImmutableArray<string> TypeParameters { get; }
+		public ImmutableArray<TemplateParameterSymbol> TypeParameters { get; }
 		public ClassSymbol? BaseClass { get; }
 		public ImmutableArray<ResolvedStatement> Members { get; }
 
 		public Class(AccessModifier accessModifier, ClassModifier classModifier, ClassSymbol classSymbol,
-					 IEnumerable<string> typeParameters, ClassSymbol? baseClass, IEnumerable<ResolvedStatement> members)
+					 IEnumerable<TemplateParameterSymbol> typeParameters, ClassSymbol? baseClass,
+					 IEnumerable<ResolvedStatement> members)
 		{
 			AccessModifier = accessModifier;
 			ClassModifier = classModifier;
@@ -153,14 +155,16 @@ public abstract class ResolvedStatement : ResolvedNode
 		public AccessModifier AccessModifier { get; }
 		public StructModifier StructModifier { get; }
 		public StructSymbol StructSymbol { get; }
+		public ImmutableArray<TemplateParameterSymbol> TypeParameters { get; }
 		public ImmutableArray<ResolvedStatement> Members { get; }
 
 		public Struct(AccessModifier accessModifier, StructModifier structModifier, StructSymbol structSymbol,
-					  IEnumerable<ResolvedStatement> members)
+					  IEnumerable<ResolvedStatement> members, IEnumerable<TemplateParameterSymbol> typeParameters)
 		{
 			AccessModifier = accessModifier;
 			StructModifier = structModifier;
 			StructSymbol = structSymbol;
+			TypeParameters = typeParameters.ToImmutableArray();
 			Members = members.ToImmutableArray();
 		}
 		
@@ -174,13 +178,15 @@ public abstract class ResolvedStatement : ResolvedNode
 	{
 		public AccessModifier AccessModifier { get; }
 		public InterfaceSymbol InterfaceSymbol { get; }
+		public ImmutableArray<TemplateParameterSymbol> TypeParameters { get; }
 		public ImmutableArray<ResolvedStatement> Members { get; }
 
 		public Interface(AccessModifier accessModifier, InterfaceSymbol interfaceSymbol,
-						 IEnumerable<ResolvedStatement> members)
+						 IEnumerable<ResolvedStatement> members, IEnumerable<TemplateParameterSymbol> typeParameters)
 		{
 			AccessModifier = accessModifier;
 			InterfaceSymbol = interfaceSymbol;
+			TypeParameters = typeParameters.ToImmutableArray();
 			Members = members.ToImmutableArray();
 		}
 		
@@ -195,9 +201,9 @@ public abstract class ResolvedStatement : ResolvedNode
 		public class Member
 		{
 			public string Identifier { get; }
-			public ResolvedExpression Expression { get; }
+			public ResolvedExpression? Expression { get; }
 
-			public Member(string identifier, ResolvedExpression expression)
+			public Member(string identifier, ResolvedExpression? expression)
 			{
 				Identifier = identifier;
 				Expression = expression;
@@ -292,14 +298,16 @@ public abstract class ResolvedStatement : ResolvedNode
 	{
 		public AccessModifier AccessModifier { get; }
 		public ResolvedType Type { get; }
+		public IndexerSymbol IndexerSymbol { get; }
 		public ImmutableArray<ParameterSymbol> ParameterList { get; }
 		public ImmutableArray<ResolvedStatement> Body { get; }
 
 		public Indexer(AccessModifier accessModifier, ResolvedType type, IEnumerable<ParameterSymbol> parameterList,
-					   IEnumerable<ResolvedStatement> body)
+					   IEnumerable<ResolvedStatement> body, IndexerSymbol indexerSymbol)
 		{
 			AccessModifier = accessModifier;
 			Type = type;
+			IndexerSymbol = indexerSymbol;
 			ParameterList = parameterList.ToImmutableArray();
 			Body = body.ToImmutableArray();
 		}
@@ -411,18 +419,18 @@ public abstract class ResolvedStatement : ResolvedNode
 	public sealed class Property : ResolvedStatement
 	{
 		public AccessModifier AccessModifier { get; }
-		public ImmutableArray<SyntaxToken> Modifiers { get; }
-		public TypeSyntax Type { get; }
-		public SyntaxToken NameToken { get; }
-		public ImmutableArray<Statement> Body { get; }
+		public ImmutableArray<MethodModifier> Modifiers { get; }
+		public ResolvedType Type { get; }
+		public PropertySymbol PropertySymbol { get; }
+		public ImmutableArray<ResolvedStatement> Body { get; }
 
-		public Property(AccessModifier accessModifier, IEnumerable<SyntaxToken> modifiers, TypeSyntax type,
-						SyntaxToken nameToken, IEnumerable<Statement> body)
+		public Property(AccessModifier accessModifier, IEnumerable<MethodModifier> modifiers, ResolvedType type,
+						PropertySymbol propertySymbol, IEnumerable<ResolvedStatement> body)
 		{
 			AccessModifier = accessModifier;
 			Modifiers = modifiers.ToImmutableArray();
 			Type = type;
-			NameToken = nameToken;
+			PropertySymbol = propertySymbol;
 			Body = body.ToImmutableArray();
 		}
 		
@@ -434,17 +442,17 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class PropertySignature : ResolvedStatement
 	{
-		public ImmutableArray<SyntaxToken> Modifiers { get; }
-		public TypeSyntax Type { get; }
-		public SyntaxToken NameToken { get; }
-		public ImmutableArray<Statement> Body { get; }
+		public ImmutableArray<MethodModifier> Modifiers { get; }
+		public ResolvedType Type { get; }
+		public PropertySymbol PropertySymbol { get; }
+		public ImmutableArray<ResolvedStatement> Body { get; }
 
-		public PropertySignature(IEnumerable<SyntaxToken> modifiers, TypeSyntax type,
-								 SyntaxToken nameToken, IEnumerable<Statement> body)
+		public PropertySignature(IEnumerable<MethodModifier> modifiers, ResolvedType type,
+								 PropertySymbol propertySymbol, IEnumerable<ResolvedStatement> body)
 		{
 			Modifiers = modifiers.ToImmutableArray();
 			Type = type;
-			NameToken = nameToken;
+			PropertySymbol = propertySymbol;
 			Body = body.ToImmutableArray();
 		}
 		
@@ -456,26 +464,26 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class Method : ResolvedStatement
 	{
-		public SyntaxToken? AccessModifier { get; }
-		public ImmutableArray<SyntaxToken> Modifiers { get; }
-		public TypeSyntax? ReturnType { get; }
-		public SyntaxToken NameToken { get; }
-		public Block Body { get; }
-		public ImmutableArray<Variable> ParameterList { get; }
-		public SyntaxToken? AsyncToken { get; }
-		public ImmutableArray<SyntaxToken> TypeParameters { get; }
+		public AccessModifier AccessModifier { get; }
+		public ImmutableArray<MethodModifier> Modifiers { get; }
+		public ResolvedType? ReturnType { get; }
+		public MethodSymbol MethodSymbol { get; }
+		public ResolvedStatement Body { get; }
+		public ImmutableArray<ParameterSymbol> ParameterList { get; }
+		public bool IsAsync { get; }
+		public ImmutableArray<TemplateParameterSymbol> TypeParameters { get; }
 
-		public Method(SyntaxToken? accessModifier, IEnumerable<SyntaxToken> modifiers, TypeSyntax? returnType,
-					  SyntaxToken nameToken, Block body, IEnumerable<Variable> parameterList, SyntaxToken? asyncToken,
-					  IEnumerable<SyntaxToken> typeParameters)
+		public Method(AccessModifier accessModifier, IEnumerable<MethodModifier> modifiers, ResolvedType? returnType,
+					  MethodSymbol methodSymbol, ResolvedStatement body, IEnumerable<ParameterSymbol> parameterList,
+					  bool isAsync, IEnumerable<TemplateParameterSymbol> typeParameters)
 		{
 			AccessModifier = accessModifier;
 			Modifiers = modifiers.ToImmutableArray();
 			ReturnType = returnType;
-			NameToken = nameToken;
+			MethodSymbol = methodSymbol;
 			Body = body;
 			ParameterList = parameterList.ToImmutableArray();
-			AsyncToken = asyncToken;
+			IsAsync = isAsync;
 			TypeParameters = typeParameters.ToImmutableArray();
 		}
 		
@@ -487,22 +495,22 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class MethodSignature : ResolvedStatement
 	{
-		public ImmutableArray<SyntaxToken> Modifiers { get; }
-		public TypeSyntax? ReturnType { get; }
-		public SyntaxToken NameToken { get; }
-		public ImmutableArray<Variable> ParameterList { get; }
-		public SyntaxToken? AsyncToken { get; }
-		public ImmutableArray<SyntaxToken> TypeParameters { get; }
+		public ImmutableArray<MethodModifier> Modifiers { get; }
+		public ResolvedType? ReturnType { get; }
+		public MethodSymbol MethodSymbol { get; }
+		public ImmutableArray<ParameterSymbol> ParameterList { get; }
+		public bool IsAsync { get; }
+		public ImmutableArray<TemplateParameterSymbol> TypeParameters { get; }
 
-		public MethodSignature(IEnumerable<SyntaxToken> modifiers, TypeSyntax? returnType,
-							   SyntaxToken nameToken, IEnumerable<Variable> parameterList, SyntaxToken? asyncToken,
-							   IEnumerable<SyntaxToken> typeParameters)
+		public MethodSignature(IEnumerable<MethodModifier> modifiers, ResolvedType? returnType,
+							   MethodSymbol methodSymbol, IEnumerable<ParameterSymbol> parameterList, bool isAsync,
+							   IEnumerable<TemplateParameterSymbol> typeParameters)
 		{
 			Modifiers = modifiers.ToImmutableArray();
 			ReturnType = returnType;
-			NameToken = nameToken;
+			MethodSymbol = methodSymbol;
 			ParameterList = parameterList.ToImmutableArray();
-			AsyncToken = asyncToken;
+			IsAsync = isAsync;
 			TypeParameters = typeParameters.ToImmutableArray();
 		}
 		
@@ -514,17 +522,17 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class OperatorOverload : ResolvedStatement
 	{
-		public TypeSyntax ReturnType { get; }
-		public BinaryOperator BinaryOperator { get; }
-		public ImmutableArray<Variable> ParameterList { get; }
-		public Statement Body { get; }
+		public ResolvedType ReturnType { get; }
+		public OperatorSymbol OperatorSymbol { get; }
+		public ImmutableArray<ParameterSymbol> ParameterList { get; }
+		public ResolvedStatement Body { get; }
 
-		public OperatorOverload(TypeSyntax returnType, BinaryOperator binaryOperator, IEnumerable<Variable> parameterList,
-								Statement body)
+		public OperatorOverload(ResolvedType returnType, OperatorSymbol operatorSymbol, 
+								IEnumerable<ParameterSymbol> parameterList, ResolvedStatement body)
 
 		{
 			ReturnType = returnType;
-			BinaryOperator = binaryOperator;
+			OperatorSymbol = operatorSymbol;
 			ParameterList = parameterList.ToImmutableArray();
 			Body = body;
 		}
@@ -535,21 +543,42 @@ public abstract class ResolvedStatement : ResolvedNode
 		}
 	}
 
+	public sealed class OperatorOverloadSignature : ResolvedStatement
+	{
+		public ResolvedType ReturnType { get; }
+		public BinaryOperator BinaryOperator { get; }
+		public ImmutableArray<ParameterSymbol> ParameterList { get; }
+
+		public OperatorOverloadSignature(ResolvedType returnType, BinaryOperator binaryOperator,
+										 IEnumerable<ParameterSymbol> parameterList)
+
+		{
+			ReturnType = returnType;
+			BinaryOperator = binaryOperator;
+			ParameterList = parameterList.ToImmutableArray();
+		}
+
+		public override void AcceptVisitor(IVisitor visitor)
+		{
+			visitor.VisitOperatorOverloadSignatureStatement(this);
+		}
+	}
+
 	public sealed class Field : ResolvedStatement
 	{
-		public SyntaxToken? AccessModifier { get; }
-		public ImmutableArray<SyntaxToken> Modifiers { get; }
-		public TypeSyntax? Type { get; }
-		public SyntaxToken NameToken { get; }
-		public Expression? Initializer { get; }
+		public AccessModifier AccessModifier { get; }
+		public ImmutableArray<FieldModifier> Modifiers { get; }
+		public ResolvedType Type { get; }
+		public FieldSymbol FieldSymbol { get; }
+		public ResolvedExpression? Initializer { get; }
 
-		public Field(SyntaxToken? accessModifier, IEnumerable<SyntaxToken> modifiers, TypeSyntax? type,
-					 SyntaxToken nameToken, Expression? initializer)
+		public Field(AccessModifier accessModifier, IEnumerable<FieldModifier> modifiers, ResolvedType type,
+					 FieldSymbol fieldSymbol, ResolvedExpression? initializer)
 		{
 			AccessModifier = accessModifier;
 			Modifiers = modifiers.ToImmutableArray();
 			Type = type;
-			NameToken = nameToken;
+			FieldSymbol = fieldSymbol;
 			Initializer = initializer;
 		}
 		
@@ -577,11 +606,11 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class Control : ResolvedStatement
 	{
-		public Expression IfExpression { get; }
-		public Statement IfStatement { get; }
-		public Statement? ElseStatement { get; }
+		public ResolvedExpression IfExpression { get; }
+		public ResolvedStatement IfStatement { get; }
+		public ResolvedStatement? ElseStatement { get; }
 		
-		public Control(Expression ifExpression, Statement ifStatement, Statement? elseStatement)
+		public Control(ResolvedExpression ifExpression, ResolvedStatement ifStatement, ResolvedStatement? elseStatement)
 		{
 			IfExpression = ifExpression;
 			IfStatement = ifStatement;
@@ -596,10 +625,10 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class While : ResolvedStatement
 	{
-		public Expression Condition { get; }
-		public Statement Body { get; }
+		public ResolvedExpression Condition { get; }
+		public ResolvedStatement Body { get; }
 		
-		public While(Expression condition, Statement body)
+		public While(ResolvedExpression condition, ResolvedStatement body)
 		{
 			Condition = condition;
 			Body = body;
@@ -613,10 +642,10 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class DoWhile : ResolvedStatement
 	{
-		public Statement Body { get; }
-		public Expression Condition { get; }
+		public ResolvedStatement Body { get; }
+		public ResolvedExpression Condition { get; }
 		
-		public DoWhile(Statement body, Expression condition)
+		public DoWhile(ResolvedStatement body, ResolvedExpression condition)
 		{
 			Body = body;
 			Condition = condition;
@@ -630,12 +659,13 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class For : ResolvedStatement
 	{
-		public Statement? Initializer { get; }
-		public Expression? Condition { get; }
-		public Statement? Increment { get; }
-		public Statement Body { get; }
-		
-		public For(Statement? initializer, Expression? condition, Statement? increment, Statement body)
+		public ResolvedStatement? Initializer { get; }
+		public ResolvedExpression? Condition { get; }
+		public ResolvedStatement? Increment { get; }
+		public ResolvedStatement Body { get; }
+
+		public For(ResolvedStatement? initializer, ResolvedExpression? condition, ResolvedStatement? increment,
+				   ResolvedStatement body)
 		{
 			Initializer = initializer;
 			Condition = condition;
@@ -651,12 +681,13 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class ForEach : ResolvedStatement
 	{
-		public TypeSyntax? IteratorType { get; }
-		public SyntaxToken Iterator { get; }
-		public Expression Enumerable { get; }
-		public Statement Body { get; }
-		
-		public ForEach(TypeSyntax? iteratorType, SyntaxToken iterator, Expression enumerable, Statement body)
+		public ResolvedType? IteratorType { get; }
+		public LocalVariableSymbol Iterator { get; }
+		public ResolvedExpression Enumerable { get; }
+		public ResolvedStatement Body { get; }
+
+		public ForEach(ResolvedType? iteratorType, LocalVariableSymbol iterator, ResolvedExpression enumerable,
+					   ResolvedStatement body)
 		{
 			IteratorType = iteratorType;
 			Iterator = iterator;
@@ -672,10 +703,10 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class Repeat : ResolvedStatement
 	{
-		public Expression Repetitions { get; }
-		public Statement Body { get; }
+		public ResolvedExpression Repetitions { get; }
+		public ResolvedStatement Body { get; }
 		
-		public Repeat(Expression repetitions, Statement body)
+		public Repeat(ResolvedExpression repetitions, ResolvedStatement body)
 		{
 			Repetitions = repetitions;
 			Body = body;
@@ -689,9 +720,9 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class Return : ResolvedStatement
 	{
-		public Expression? Expression { get; }
+		public ResolvedExpression? Expression { get; }
 		
-		public Return(Expression? expression)
+		public Return(ResolvedExpression? expression)
 		{
 			Expression = expression;
 		}
@@ -704,9 +735,9 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class Throw : ResolvedStatement
 	{
-		public Expression? Expression { get; }
+		public ResolvedExpression? Expression { get; }
 
-		public Throw(Expression? expression)
+		public Throw(ResolvedExpression? expression)
 		{
 			Expression = expression;
 		}
@@ -719,11 +750,11 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class Seal : ResolvedStatement
 	{
-		public SyntaxToken Identifier { get; }
+		public Symbol Symbol { get; }
 		
-		public Seal(SyntaxToken identifier)
+		public Seal(Symbol symbol)
 		{
-			Identifier = identifier;
+			Symbol = symbol;
 		}
 		
 		public override void AcceptVisitor(IVisitor visitor)
@@ -734,18 +765,16 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class Try : ResolvedStatement
 	{
-		public Statement TryStatement { get; }
-		public TypeSyntax? CatchType { get; }
-		public SyntaxToken? CatchNameToken { get; }
-		public Statement? CatchStatement { get; }
-		public Statement? FinallyStatement { get; }
+		public ResolvedStatement TryStatement { get; }
+		public LocalVariableSymbol? CatchSymbol { get; }
+		public ResolvedStatement? CatchStatement { get; }
+		public ResolvedStatement? FinallyStatement { get; }
 		
-		public Try(Statement tryStatement, TypeSyntax? catchType, SyntaxToken? catchNameToken,
-				   Statement? catchStatement, Statement? finallyStatement)
+		public Try(ResolvedStatement tryStatement, LocalVariableSymbol? catchSymbol,
+				   ResolvedStatement? catchStatement, ResolvedStatement? finallyStatement)
 		{
 			TryStatement = tryStatement;
-			CatchType = catchType;
-			CatchNameToken = catchNameToken;
+			CatchSymbol = catchSymbol;
 			CatchStatement = catchStatement;
 			FinallyStatement = finallyStatement;
 		}
@@ -758,14 +787,12 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class VariableDeclaration : ResolvedStatement
 	{
-		public TypeSyntax? Type { get; }
-		public SyntaxToken Identifier { get; }
-		public Expression? Initializer { get; }
+		public LocalVariableSymbol Symbol { get; }
+		public ResolvedExpression? Initializer { get; }
 		
-		public VariableDeclaration(TypeSyntax? type, SyntaxToken identifier, Expression? initializer)
+		public VariableDeclaration(LocalVariableSymbol symbol, ResolvedExpression? initializer)
 		{
-			Type = type;
-			Identifier = identifier;
+			Symbol = symbol;
 			Initializer = initializer;
 		}
 		
@@ -777,12 +804,12 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class Lock : ResolvedStatement
 	{
-		public Expression Expression { get; }
-		public Statement Body { get; }
+		public FieldSymbol Symbol { get; }
+		public ResolvedStatement Body { get; }
 		
-		public Lock(Expression expression, Statement body)
+		public Lock(FieldSymbol symbol, ResolvedStatement body)
 		{
-			Expression = expression;
+			Symbol = symbol;
 			Body = body;
 		}
 		
@@ -797,9 +824,9 @@ public abstract class ResolvedStatement : ResolvedNode
 		public sealed class Section
 		{
 			public ImmutableArray<Label> Labels { get; }
-			public Statement Body { get; }
+			public ResolvedStatement Body { get; }
 			
-			public Section(IEnumerable<Label> labels, Statement body)
+			public Section(IEnumerable<Label> labels, ResolvedStatement body)
 			{
 				Labels = labels.ToImmutableArray();
 				Body = body;
@@ -818,9 +845,9 @@ public abstract class ResolvedStatement : ResolvedNode
 
 		public sealed class ExpressionLabel : Label
 		{
-			public Expression Expression { get; }
+			public ResolvedExpression Expression { get; }
 			
-			public ExpressionLabel(Expression expression)
+			public ExpressionLabel(ResolvedExpression expression)
 			{
 				Expression = expression;
 			}
@@ -828,20 +855,18 @@ public abstract class ResolvedStatement : ResolvedNode
 
 		public sealed class PatternLabel : Label
 		{
-			public TypeSyntax Type { get; }
-			public SyntaxToken? Identifier { get; }
+			public LocalVariableSymbol Symbol { get; }
 			
-			public PatternLabel(TypeSyntax type, SyntaxToken? identifier)
+			public PatternLabel(LocalVariableSymbol symbol)
 			{
-				Type = type;
-				Identifier = identifier;
+				Symbol = symbol;
 			}
 		}
 		
-		public Expression Expression { get; }
+		public ResolvedExpression Expression { get; }
 		public ImmutableArray<Section> Sections { get; }
 
-		public Switch(Expression expression, IEnumerable<Section> sections)
+		public Switch(ResolvedExpression expression, IEnumerable<Section> sections)
 		{
 			Expression = expression;
 			Sections = sections.ToImmutableArray();
@@ -855,9 +880,9 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class ExpressionStatement : ResolvedStatement
 	{
-		public Expression Expression { get; }
+		public ResolvedExpression Expression { get; }
 		
-		public ExpressionStatement(Expression expression)
+		public ExpressionStatement(ResolvedExpression expression)
 		{
 			Expression = expression;
 		}

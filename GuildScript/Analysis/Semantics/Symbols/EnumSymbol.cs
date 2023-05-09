@@ -6,7 +6,8 @@ public sealed class EnumSymbol : TypeSymbol
 {
 	public bool Resolved { get; set; }
 	public TypeSyntax BaseTypeSyntax { get; }
-	public NativeTypeSymbol? BaseType { get; }
+	public ResolvedType? BaseType { get; set; }
+	private readonly List<EnumMemberSymbol> enumMembers = new();
 	
 	public EnumSymbol(string name, Declaration declaration, AccessModifier accessModifier, TypeSyntax baseType)
 		: base(name, declaration, accessModifier)
@@ -24,6 +25,12 @@ public sealed class EnumSymbol : TypeSymbol
 			return null;
 		
 		members.Add(member.Name, member);
+		enumMembers.Add(member);
 		return member;
+	}
+
+	public IEnumerable<MemberSymbol> GetMembers()
+	{
+		return enumMembers;
 	}
 }

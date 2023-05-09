@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using GuildScript.Analysis.Semantics.Symbols;
 using GuildScript.Analysis.Syntax;
 using GuildScript.Analysis.Text;
@@ -113,10 +114,15 @@ public sealed class Collector : Statement.IVisitor
 		{
 			var classModifier = GetClassModifier(statement.ClassModifier);
 			var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Internal);
+
 			var declaration = new Declaration(statement.NameToken, statement);
 			var symbol = semanticModel.AddClass(statement.NameToken.Text, declaration, classModifier, accessModifier);
 			semanticModel.VisitSymbol(symbol);
 			semanticModel.EnterScope(statement);
+
+			symbol.TemplateParameters = statement.TypeParameters.Select(templateParameter =>
+				semanticModel.AddTemplateParameter(templateParameter.Text,
+					new Declaration(templateParameter, statement))).ToImmutableArray();
 
 			foreach (var member in statement.Members)
 			{
@@ -150,10 +156,16 @@ public sealed class Collector : Statement.IVisitor
 		{
 			var structModifier = GetStructModifier(statement.StructModifier);
 			var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Internal);
+
 			var declaration = new Declaration(statement.NameToken, statement);
 			var symbol = semanticModel.AddStruct(statement.NameToken.Text, declaration, structModifier, accessModifier);
+			
 			semanticModel.VisitSymbol(symbol);
 			semanticModel.EnterScope(statement);
+			
+			symbol.TemplateParameters = statement.TypeParameters.Select(templateParameter =>
+				semanticModel.AddTemplateParameter(templateParameter.Text,
+					new Declaration(templateParameter, statement))).ToImmutableArray();
 
 			foreach (var member in statement.Members)
 			{
@@ -175,7 +187,23 @@ public sealed class Collector : Statement.IVisitor
 		{
 			var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Internal);
 			var declaration = new Declaration(statement.NameToken, statement);
-			semanticModel.AddInterface(statement.NameToken.Text, declaration, accessModifier);
+
+			var symbol = semanticModel.AddInterface(statement.NameToken.Text, declaration, accessModifier);
+			
+			semanticModel.VisitSymbol(symbol);
+			semanticModel.EnterScope(statement);
+			
+			symbol.TemplateParameters = statement.TypeParameters.Select(templateParameter =>
+				semanticModel.AddTemplateParameter(templateParameter.Text,
+					new Declaration(templateParameter, statement))).ToImmutableArray();
+
+			foreach (var member in statement.Members)
+			{
+				member.AcceptVisitor(this);
+			}
+		
+			semanticModel.ExitScope();
+			semanticModel.Return();
 		}
 		catch (Exception e)
 		{
@@ -269,7 +297,31 @@ public sealed class Collector : Statement.IVisitor
 
 	public void VisitIndexerStatement(Statement.Indexer statement)
 	{
-		
+		try
+		{
+			var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Private);
+			var declaration = new Declaration(statement.ThisToken, statement);
+			var indexerSymbol = semanticModel.AddIndexer(statement.ThisToken.Text, declaration, accessModifier);
+
+			semanticModel.EnterScope(statement);
+			foreach (var parameter in statement.ParameterList)
+			{
+				var parameterDeclaration = new Declaration(parameter.Name, statement);
+				semanticModel.AddSymbol(indexerSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
+					parameter.IsReference));
+			}
+
+			foreach (var bodyStatement in statement.Body)
+			{
+				bodyStatement.AcceptVisitor(this);
+			}
+			
+			semanticModel.ExitScope();
+		}
+		catch (Exception e)
+		{
+			Diagnostics.ReportTypeCollectorException(statement.ThisToken, e.Message);
+		}
 	}
 
 	public void VisitAccessorTokenStatement(Statement.AccessorToken statement)
@@ -414,6 +466,10 @@ public sealed class Collector : Statement.IVisitor
 				semanticModel.AddSymbol(methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
 					parameter.IsReference));
 			}
+
+			methodSymbol.TemplateParameters = statement.TypeParameters.Select(templateParameter =>
+				semanticModel.AddTemplateParameter(templateParameter.Text,
+					new Declaration(templateParameter, statement))).ToImmutableArray();
 			
 			statement.Body.AcceptVisitor(this);
 			

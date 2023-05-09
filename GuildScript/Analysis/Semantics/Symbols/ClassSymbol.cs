@@ -1,18 +1,23 @@
+using System.Collections.Immutable;
+
 namespace GuildScript.Analysis.Semantics.Symbols;
 
 public sealed class ClassSymbol : TypeSymbol
 {
 	public ClassModifier ClassModifier { get; }
 	public ClassSymbol? BaseClass { get; }
+	public ImmutableArray<TemplateParameterSymbol> TemplateParameters { get; set; }
 	private readonly List<InterfaceSymbol> interfaces = new();
 
 	public ClassSymbol(string name, Declaration declaration, ClassModifier classModifier, AccessModifier accessModifier)
-		: this(name, null, declaration, classModifier, accessModifier)
+		: this(name, null, declaration,
+		classModifier, accessModifier)
 	{
 	}
 
 	public ClassSymbol(string name, ClassSymbol? baseClass, Declaration declaration, ClassModifier classModifier,
-					   AccessModifier accessModifier) : base(name, declaration, accessModifier)
+					   AccessModifier accessModifier)
+					   : base(name, declaration, accessModifier)
 	{
 		BaseClass = baseClass;
 		ClassModifier = classModifier;

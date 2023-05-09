@@ -3,7 +3,7 @@ using GuildScript.Analysis.Syntax;
 
 namespace GuildScript.Analysis.Semantics;
 
-public sealed class Resolver : Statement.IVisitor, Expression.IVisitor
+public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression.IVisitor<ResolvedExpression>
 {
 	private readonly SemanticModel semanticModel;
 
@@ -12,27 +12,30 @@ public sealed class Resolver : Statement.IVisitor, Expression.IVisitor
 		this.semanticModel = semanticModel;
 	}
 
-	public void Resolve(SyntaxTree tree)
+	public ResolvedTree? Resolve(SyntaxTree tree)
 	{
 		try
 		{
-			Resolve(tree.Root);
+			var resolvedRoot = Resolve(tree.Root);
+			return new ResolvedTree(resolvedRoot);
 		}
 		catch (Exception e)
 		{
 			Console.ForegroundColor = ConsoleColor.DarkRed;
 			Console.WriteLine(e.Message);
 			Console.ResetColor();
+			return null;
 		}
 	}
 
-	public void Resolve(SyntaxNode node)
+	public ResolvedNode Resolve(SyntaxNode node)
 	{
 		switch (node)
 		{
 			case Statement statement:
-				statement.AcceptVisitor(this);
-				break;
+				return statement.AcceptVisitor(this);
+			default:
+				throw new Exception("Unexpected node type.");
 		}
 	}
 
@@ -204,31 +207,34 @@ public sealed class Resolver : Statement.IVisitor, Expression.IVisitor
 		throw new Exception("Failed to resolve type from expression.");
 	}
 
-	public void VisitProgramStatement(Statement.Program statement)
+	public ResolvedStatement VisitProgramStatement(Statement.Program statement)
 	{
+		ModuleSymbol? moduleSymbol = null;
 		foreach (var name in statement.Module.Names)
 		{
 			var module = semanticModel.GetModule(name);
-			if (module is null)
-				throw new Exception($"Missing module '{name}' in '{statement.Module}'.");
-			
+			moduleSymbol = module ?? throw new Exception($"Missing module '{name}' in '{statement.Module}'.");
 			semanticModel.VisitSymbol(module);
+		}
+
+		if (moduleSymbol is null)
+		{
+			throw new Exception("Program requires module definition.");
 		}
 		
 		semanticModel.EnterScope(statement);
-		foreach (var topLevelStatement in statement.Statements)
-		{
-			topLevelStatement.AcceptVisitor(this);
-		}
+		var statements = statement.Statements.Select(topLevelStatement => topLevelStatement.AcceptVisitor(this));
 		semanticModel.ExitScope();
 
 		for (var i = 0; i < statement.Module.Names.Length; i++)
 		{
 			semanticModel.Return();
 		}
+
+		return new ResolvedStatement.Program(statements, moduleSymbol);
 	}
 
-	public void VisitEntryPointStatement(Statement.EntryPoint statement)
+	public ResolvedStatement VisitEntryPointStatement(Statement.EntryPoint statement)
 	{
 		var entryPointSymbol = semanticModel.GetEntryPoint();
 		semanticModel.VisitSymbol(entryPointSymbol);
@@ -246,322 +252,630 @@ public sealed class Resolver : Statement.IVisitor, Expression.IVisitor
 			entryPointSymbol.ResolveParameter(parameter.Name.Text, parameterType);
 		}
 		
-		statement.Body.AcceptVisitor(this);
+		var body = statement.Body.AcceptVisitor(this);
 		semanticModel.ExitScope();
 		semanticModel.Return();
 
 		entryPointSymbol.Resolved = true;
+		return new ResolvedStatement.EntryPoint(entryPointSymbol.ReturnType, entryPointSymbol,
+			entryPointSymbol.GetParameters(), body);
 	}
 
-	public void VisitDefineStatement(Statement.Define statement)
+	public ResolvedStatement VisitDefineStatement(Statement.Define statement)
 	{
 		var symbol = semanticModel.FindSymbol(statement.Identifier.Text);
 		if (symbol is not DefineSymbol defineSymbol)
 			throw new Exception($"Failed to resolve definition '{statement.Identifier.Text}'.");
 
 		if (statement.Type is null)
-			return;
+			throw new Exception("Definition must supply a type.");
 		
 		defineSymbol.AliasedType = ResolveType(statement.Type);
 		defineSymbol.Resolved = true;
-	}
 
-	public void VisitBlockStatement(Statement.Block statement)
-	{
+		if (defineSymbol.AliasedType is null)
+			throw new Exception($"Failed to resolve type for definition '{defineSymbol.Name}'.");
 		
+		return new ResolvedStatement.Define(defineSymbol.Name, defineSymbol.AliasedType);
 	}
 
-	public void VisitClassStatement(Statement.Class statement)
+	public ResolvedStatement VisitBlockStatement(Statement.Block statement)
+	{
+		var statements = statement.Statements.Select(stmt => stmt.AcceptVisitor(this));
+		return new ResolvedStatement.Block(statements);
+	}
+
+	public ResolvedStatement VisitClassStatement(Statement.Class statement)
 	{
 		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
-		if (symbol is null)
-			throw new Exception($"Failed to find symbol '{statement.NameToken.Text}'.");
+		if (symbol is not ClassSymbol classSymbol)
+			throw new Exception($"Failed to find class symbol '{statement.NameToken.Text}'.");
 		
-		semanticModel.VisitSymbol(symbol);
+		semanticModel.VisitSymbol(classSymbol);
 		semanticModel.EnterScope(statement);
 
-		foreach (var member in statement.Members)
-		{
-			member.AcceptVisitor(this);
-		}
+		var members = statement.Members.Select(member => member.AcceptVisitor(this));
+
+		semanticModel.ExitScope();
+		semanticModel.Return();
+		return new ResolvedStatement.Class(classSymbol.AccessModifier, classSymbol.ClassModifier, classSymbol,
+			classSymbol.TemplateParameters, classSymbol.BaseClass, members);
+	}
+
+	public ResolvedStatement VisitStructStatement(Statement.Struct statement)
+	{
+		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
+		if (symbol is not StructSymbol structSymbol)
+			throw new Exception($"Failed to find struct symbol '{statement.NameToken.Text}'.");
+		
+		semanticModel.VisitSymbol(structSymbol);
+		semanticModel.EnterScope(statement);
+
+		var members = statement.Members.Select(member => member.AcceptVisitor(this));
 		
 		semanticModel.ExitScope();
 		semanticModel.Return();
+
+		return new ResolvedStatement.Struct(structSymbol.AccessModifier, structSymbol.StructModifier, structSymbol,
+			members, structSymbol.TemplateParameters);
 	}
 
-	public void VisitStructStatement(Statement.Struct statement)
+	public ResolvedStatement VisitInterfaceStatement(Statement.Interface statement)
 	{
 		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
-		if (symbol is null)
-			throw new Exception($"Failed to find symbol '{statement.NameToken.Text}'.");
+		if (symbol is not InterfaceSymbol interfaceSymbol)
+			throw new Exception($"Failed to find interface symbol '{statement.NameToken.Text}'.");
 		
-		semanticModel.VisitSymbol(symbol);
+		semanticModel.VisitSymbol(interfaceSymbol);
 		semanticModel.EnterScope(statement);
 
-		foreach (var member in statement.Members)
-		{
-			member.AcceptVisitor(this);
-		}
+		var members = statement.Members.Select(member => member.AcceptVisitor(this));
 		
 		semanticModel.ExitScope();
 		semanticModel.Return();
+
+		return new ResolvedStatement.Interface(interfaceSymbol.AccessModifier, interfaceSymbol, members,
+			interfaceSymbol.TemplateParameters);
 	}
 
-	public void VisitInterfaceStatement(Statement.Interface statement)
+	public ResolvedStatement VisitEnumStatement(Statement.Enum statement)
 	{
 		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
-		if (symbol is null)
-			throw new Exception($"Failed to find symbol '{statement.NameToken.Text}'.");
+		if (symbol is not EnumSymbol enumSymbol)
+			throw new Exception($"Failed to find enum symbol '{statement.NameToken.Text}'.");
+
+		enumSymbol.BaseType = ResolveType(enumSymbol.BaseTypeSyntax);
+		enumSymbol.Resolved = true;
+
+		if (enumSymbol.BaseType is null)
+			throw new Exception($"Failed to resolve base type for enum '{statement.NameToken.Text}'.");
+
+		var members = statement.Members.Select(member => member.Expression is null
+			? new ResolvedStatement.Enum.Member(member.Identifier.Text, null)
+			: new ResolvedStatement.Enum.Member(member.Identifier.Text, member.Expression.AcceptVisitor(this)));
+
+		return new ResolvedStatement.Enum(enumSymbol.AccessModifier, enumSymbol, members, enumSymbol.BaseType);
+	}
+
+	public ResolvedStatement VisitDestructorStatement(Statement.Destructor statement)
+	{
+		var symbol = semanticModel.FindSymbol("destructor");
+		if (symbol is not DestructorSymbol destructorSymbol)
+			throw new Exception("Failed to find destructor symbol.");
 		
-		semanticModel.VisitSymbol(symbol);
+		semanticModel.VisitSymbol(destructorSymbol);
 		semanticModel.EnterScope(statement);
 
-		foreach (var member in statement.Members)
-		{
-			member.AcceptVisitor(this);
-		}
-		
+		var body = statement.Body.AcceptVisitor(this);
+
 		semanticModel.ExitScope();
 		semanticModel.Return();
-	}
-
-	public void VisitEnumStatement(Statement.Enum statement)
-	{
 		
+		destructorSymbol.Resolved = true;
+		return new ResolvedStatement.Destructor(body, destructorSymbol);
 	}
 
-	public void VisitDestructorStatement(Statement.Destructor statement)
+	public ResolvedStatement VisitExternalMethodStatement(Statement.ExternalMethod statement)
 	{
+		var symbol = semanticModel.FindSymbol(statement.Identifier.Text);
+		if (symbol is not ExternalMethodSymbol externalMethodSymbol)
+			throw new Exception($"Failed to find external method symbol '{statement.Identifier.Text}'.");
 		
+		semanticModel.VisitSymbol(externalMethodSymbol);
+		semanticModel.EnterScope(statement);
+
+		if (statement.ReturnType is not null)
+			externalMethodSymbol.ReturnType = ResolveType(statement.ReturnType);
+		
+		foreach (var parameter in statement.ParameterList)
+		{
+			var parameterType = ResolveType(parameter.Type);
+			if (parameterType is null)
+				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
+			
+			externalMethodSymbol.ResolveParameter(parameter.Name.Text, parameterType);
+		}
+
+		semanticModel.ExitScope();
+		semanticModel.Return();
+		
+		externalMethodSymbol.Resolved = true;
+		return new ResolvedStatement.ExternalMethod(externalMethodSymbol.ReturnType, externalMethodSymbol,
+			externalMethodSymbol.GetParameters());
 	}
 
-	public void VisitExternalMethodStatement(Statement.ExternalMethod statement)
+	public ResolvedStatement VisitConstructorStatement(Statement.Constructor statement)
 	{
+		var symbol = semanticModel.FindSymbol("constructor");
+		if (symbol is not ConstructorSymbol constructorSymbol)
+			throw new Exception("Failed to find constructor.");
 		
+		// Handle overloads
+		if (constructorSymbol.Declaration.SourceNode != statement)
+		{
+			foreach (var overload in constructorSymbol.GetOverloads())
+			{
+				if (overload.Declaration.SourceNode != statement)
+					continue;
+
+				constructorSymbol = overload;
+			}
+		}
+
+		if (constructorSymbol.Declaration.SourceNode != statement)
+			throw new Exception("Failed to find constructor for resolution.");
+
+		semanticModel.VisitSymbol(constructorSymbol);
+		semanticModel.EnterScope(statement);
+
+		foreach (var parameter in statement.ParameterList)
+		{
+			var parameterType = ResolveType(parameter.Type);
+			if (parameterType is null)
+				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
+			
+			constructorSymbol.ResolveParameter(parameter.Name.Text, parameterType);
+		}
+		
+		var body = statement.Body.AcceptVisitor(this);
+		semanticModel.ExitScope();
+		semanticModel.Return();
+
+		// @TODO Resolve initializer and arguments
+		
+		constructorSymbol.Resolved = true;
+		return new ResolvedStatement.Constructor(constructorSymbol.AccessModifier, constructorSymbol,
+			constructorSymbol.GetParameters(), body, null, Array.Empty<ResolvedExpression>());
 	}
 
-	public void VisitConstructorStatement(Statement.Constructor statement)
+	public ResolvedStatement VisitIndexerStatement(Statement.Indexer statement)
 	{
-		
+		var symbol = semanticModel.FindSymbol("this");
+		if (symbol is not IndexerSymbol indexerSymbol)
+			throw new Exception("Failed to find indexer.");
+
+		semanticModel.VisitSymbol(indexerSymbol);
+		semanticModel.EnterScope(statement);
+
+		indexerSymbol.Type = ResolveType(statement.Type);
+		if (indexerSymbol.Type is null)
+			throw new Exception("Failed to resolve type of indexer.");
+
+		foreach (var parameter in statement.ParameterList)
+		{
+			var parameterType = ResolveType(parameter.Type);
+			if (parameterType is null)
+				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
+			
+			indexerSymbol.ResolveParameter(parameter.Name.Text, parameterType);
+		}
+
+		var body = statement.Body.Select(bodyStatement => bodyStatement.AcceptVisitor(this));
+
+		semanticModel.ExitScope();
+		semanticModel.Return();
+
+		indexerSymbol.Resolved = true;
+		return new ResolvedStatement.Indexer(indexerSymbol.AccessModifier, indexerSymbol.Type,
+			indexerSymbol.GetParameters(), body, indexerSymbol);
 	}
 
-	public void VisitIndexerStatement(Statement.Indexer statement)
+	private static AccessModifier GetAccessModifier(SyntaxToken? modifierToken, AccessModifier @default)
 	{
-		
+		if (modifierToken is null)
+			return @default;
+
+		return modifierToken.Type switch
+		{
+			SyntaxTokenType.Public    => AccessModifier.Public,
+			SyntaxTokenType.Private   => AccessModifier.Private,
+			SyntaxTokenType.Protected => AccessModifier.Protected,
+			SyntaxTokenType.Internal  => AccessModifier.Internal,
+			_                         => @default
+		};
 	}
 
-	public void VisitAccessorTokenStatement(Statement.AccessorToken statement)
+	public ResolvedStatement VisitAccessorTokenStatement(Statement.AccessorToken statement)
 	{
+		var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Public);
 		
+		var autoType = statement.Token.Type switch
+		{
+			SyntaxTokenType.Get => AccessorAutoType.Get,
+			SyntaxTokenType.Set => AccessorAutoType.Set,
+			_                   => throw new Exception($"Unexpected accessor token '{statement.Token.Text}'.")
+		};
+
+		return new ResolvedStatement.AccessorAuto(accessModifier, autoType);
 	}
 
-	public void VisitAccessorLambdaStatement(Statement.AccessorLambda statement)
+	public ResolvedStatement VisitAccessorLambdaStatement(Statement.AccessorLambda statement)
 	{
+		var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Public);
+
+		if (statement.LambdaExpression.AcceptVisitor(this) is not ResolvedExpression.Lambda lambda)
+			throw new Exception("Invalid lambda expression.");
 		
+		return new ResolvedStatement.AccessorLambda(accessModifier, lambda);
 	}
 
-	public void VisitAccessorLambdaSignatureStatement(Statement.AccessorLambdaSignature statement)
+	public ResolvedStatement VisitAccessorLambdaSignatureStatement(Statement.AccessorLambdaSignature statement)
 	{
+		var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Public);
+
+		var parameters = new List<ResolvedType>();
+		foreach (var parameter in statement.LambdaSignature.InputTypes)
+		{
+			if (ResolveType(parameter) is not { } resolvedType)
+				continue;
+			
+			parameters.Add(resolvedType);
+		}
+
+		var returnType = statement.LambdaSignature.OutputType is null
+			? null
+			: ResolveType(statement.LambdaSignature.OutputType);
+
+		var symbol = new LambdaTypeSymbol(parameters, returnType);
 		
+		return new ResolvedStatement.AccessorLambdaSignature(accessModifier, symbol);
 	}
 
-	public void VisitEventStatement(Statement.Event statement)
+	public ResolvedStatement VisitEventStatement(Statement.Event statement)
 	{
+		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
+		if (symbol is not EventSymbol eventSymbol)
+			throw new Exception($"Failed to find event symbol '{statement.NameToken.Text}'.");
 		
+		semanticModel.VisitSymbol(eventSymbol);
+		semanticModel.EnterScope(statement);
+		
+		foreach (var parameter in statement.ParameterList)
+		{
+			var parameterType = ResolveType(parameter.Type);
+			if (parameterType is null)
+				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
+			
+			eventSymbol.ResolveParameter(parameter.Name.Text, parameterType);
+		}
+
+		semanticModel.ExitScope();
+		semanticModel.Return();
+		
+		eventSymbol.Resolved = true;
+		return new ResolvedStatement.Event(eventSymbol.AccessModifier, eventSymbol.EventModifier, eventSymbol,
+			eventSymbol.GetParameters());
 	}
 
-	public void VisitEventSignatureStatement(Statement.EventSignature statement)
+	public ResolvedStatement VisitEventSignatureStatement(Statement.EventSignature statement)
 	{
+		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
+		if (symbol is not EventSymbol eventSymbol)
+			throw new Exception($"Failed to find event symbol '{statement.NameToken.Text}'.");
 		
+		semanticModel.VisitSymbol(eventSymbol);
+		semanticModel.EnterScope(statement);
+		
+		foreach (var parameter in statement.ParameterList)
+		{
+			var parameterType = ResolveType(parameter.Type);
+			if (parameterType is null)
+				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
+			
+			eventSymbol.ResolveParameter(parameter.Name.Text, parameterType);
+		}
+
+		semanticModel.ExitScope();
+		semanticModel.Return();
+		
+		eventSymbol.Resolved = true;
+		return new ResolvedStatement.EventSignature(eventSymbol.EventModifier, eventSymbol,
+			eventSymbol.GetParameters());
 	}
 
-	public void VisitPropertyStatement(Statement.Property statement)
+	public ResolvedStatement VisitPropertyStatement(Statement.Property statement)
 	{
+		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
+		if (symbol is not PropertySymbol propertySymbol)
+			throw new Exception($"Failed to find property symbol '{statement.NameToken.Text}'.");
+
+
+		var type = ResolveType(statement.Type);
+		if (type is null)
+			throw new Exception($"Failed to resolve type of property '{statement.NameToken.Text}'.");
+
 		
+		semanticModel.VisitSymbol(propertySymbol);
+		semanticModel.EnterScope(statement);
+
+		var body = statement.Body.Select(bodyStatement => bodyStatement.AcceptVisitor(this));
+
+		semanticModel.ExitScope();
+		semanticModel.Return();
+
+		propertySymbol.Resolved = true;
+		return new ResolvedStatement.Property(propertySymbol.AccessModifier, propertySymbol.Modifiers, type,
+			propertySymbol, body);
 	}
 
-	public void VisitPropertySignatureStatement(Statement.PropertySignature statement)
+	public ResolvedStatement VisitPropertySignatureStatement(Statement.PropertySignature statement)
 	{
+		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
+		if (symbol is not PropertySymbol propertySymbol)
+			throw new Exception($"Failed to find property symbol '{statement.NameToken.Text}'.");
+
+
+		var type = ResolveType(statement.Type);
+		if (type is null)
+			throw new Exception($"Failed to resolve type of property '{statement.NameToken.Text}'.");
+
 		
+		semanticModel.VisitSymbol(propertySymbol);
+		semanticModel.EnterScope(statement);
+
+		var body = statement.Body.Select(bodyStatement => bodyStatement.AcceptVisitor(this));
+
+		semanticModel.ExitScope();
+		semanticModel.Return();
+
+		propertySymbol.Resolved = true;
+		return new ResolvedStatement.PropertySignature(propertySymbol.Modifiers, type, propertySymbol, body);
 	}
 
-	public void VisitMethodStatement(Statement.Method statement)
+	public ResolvedStatement VisitMethodStatement(Statement.Method statement)
 	{
+		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
+		if (symbol is not MethodSymbol methodSymbol)
+			throw new Exception($"Failed to find method symbol '{statement.NameToken.Text}'.");
+
+
+		var returnType = statement.ReturnType is null ? null : ResolveType(statement.ReturnType);
 		
+		semanticModel.VisitSymbol(methodSymbol);
+		semanticModel.EnterScope(statement);
+		
+		foreach (var parameter in statement.ParameterList)
+		{
+			var parameterType = ResolveType(parameter.Type);
+			if (parameterType is null)
+				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
+			
+			methodSymbol.ResolveParameter(parameter.Name.Text, parameterType);
+		}
+
+		var body = statement.Body.AcceptVisitor(this);
+
+		semanticModel.ExitScope();
+		semanticModel.Return();
+
+		methodSymbol.Resolved = true;
+		return new ResolvedStatement.Method(methodSymbol.AccessModifier, methodSymbol.Modifiers, returnType,
+			methodSymbol, body, methodSymbol.GetParameters(), statement.AsyncToken is not null,
+			methodSymbol.TemplateParameters);
 	}
 
-	public void VisitMethodSignatureStatement(Statement.MethodSignature statement)
+	public ResolvedStatement VisitMethodSignatureStatement(Statement.MethodSignature statement)
 	{
+		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
+		if (symbol is not MethodSymbol methodSymbol)
+			throw new Exception($"Failed to find method symbol '{statement.NameToken.Text}'.");
+
+
+		var returnType = statement.ReturnType is null ? null : ResolveType(statement.ReturnType);
 		
+		semanticModel.VisitSymbol(methodSymbol);
+		semanticModel.EnterScope(statement);
+		
+		foreach (var parameter in statement.ParameterList)
+		{
+			var parameterType = ResolveType(parameter.Type);
+			if (parameterType is null)
+				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
+			
+			methodSymbol.ResolveParameter(parameter.Name.Text, parameterType);
+		}
+
+		semanticModel.ExitScope();
+		semanticModel.Return();
+
+		methodSymbol.Resolved = true;
+		return new ResolvedStatement.MethodSignature(methodSymbol.Modifiers, returnType, methodSymbol,
+			methodSymbol.GetParameters(), statement.AsyncToken is not null, methodSymbol.TemplateParameters);
 	}
 
-	public void VisitFieldStatement(Statement.Field statement)
+	public ResolvedStatement VisitFieldStatement(Statement.Field statement)
 	{
 		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
 		if (symbol is not FieldSymbol fieldSymbol)
 			throw new Exception($"Failed to resolve field '{statement.NameToken.Text}'.");
 
 		if (statement.Type is null)
-			return;
+			throw new Exception("Fields require explicit types.");
 		
 		fieldSymbol.Type = ResolveType(statement.Type);
+		if (fieldSymbol.Type is null)
+			throw new Exception($"Failed to resolve type of field '{statement.NameToken.Text}'.");
+
+		var initializer = statement.Initializer?.AcceptVisitor(this);
+		
 		fieldSymbol.Resolved = true;
 
-		
+		return new ResolvedStatement.Field(fieldSymbol.AccessModifier, fieldSymbol.Modifiers, fieldSymbol.Type,
+			fieldSymbol, initializer);
 	}
 
-	public void VisitBreakStatement(Statement.Break statement)
+	public ResolvedStatement VisitBreakStatement(Statement.Break statement)
 	{
-		
+		return new ResolvedStatement.Break();
 	}
 
-	public void VisitContinueStatement(Statement.Continue statement)
+	public ResolvedStatement VisitContinueStatement(Statement.Continue statement)
 	{
-		
+		return new ResolvedStatement.Continue();
 	}
 
-	public void VisitControlStatement(Statement.Control statement)
+	public ResolvedStatement VisitControlStatement(Statement.Control statement)
 	{
-		
+		return new ResolvedStatement.Control();
 	}
 
-	public void VisitWhileStatement(Statement.While statement)
+	public ResolvedStatement VisitWhileStatement(Statement.While statement)
 	{
-		
+		return new ResolvedStatement.While();
 	}
 
-	public void VisitDoWhileStatement(Statement.DoWhile statement)
+	public ResolvedStatement VisitDoWhileStatement(Statement.DoWhile statement)
 	{
-		
+		return new ResolvedStatement.DoWhile();
 	}
 
-	public void VisitForStatement(Statement.For statement)
+	public ResolvedStatement VisitForStatement(Statement.For statement)
 	{
-		
+		return new ResolvedStatement.For();
 	}
 
-	public void VisitForEachStatement(Statement.ForEach statement)
+	public ResolvedStatement VisitForEachStatement(Statement.ForEach statement)
 	{
-		
+		return new ResolvedStatement.ForEach();
 	}
 
-	public void VisitRepeatStatement(Statement.Repeat statement)
+	public ResolvedStatement VisitRepeatStatement(Statement.Repeat statement)
 	{
-		
+		return new ResolvedStatement.Repeat();
 	}
 
-	public void VisitReturnStatement(Statement.Return statement)
+	public ResolvedStatement VisitReturnStatement(Statement.Return statement)
 	{
-		
+		return new ResolvedStatement.Return();
 	}
 
-	public void VisitThrowStatement(Statement.Throw statement)
+	public ResolvedStatement VisitThrowStatement(Statement.Throw statement)
 	{
-		
+		return new ResolvedStatement.Throw();
 	}
 
-	public void VisitSealStatement(Statement.Seal statement)
+	public ResolvedStatement VisitSealStatement(Statement.Seal statement)
 	{
-		
+		return new ResolvedStatement.Seal();
 	}
 
-	public void VisitTryStatement(Statement.Try statement)
+	public ResolvedStatement VisitTryStatement(Statement.Try statement)
 	{
-		
+		return new ResolvedStatement.Try();
 	}
 
-	public void VisitVariableDeclarationStatement(Statement.VariableDeclaration statement)
+	public ResolvedStatement VisitVariableDeclarationStatement(Statement.VariableDeclaration statement)
 	{
-		
+		return new ResolvedStatement.VariableDeclaration();
 	}
 
-	public void VisitLockStatement(Statement.Lock statement)
+	public ResolvedStatement VisitLockStatement(Statement.Lock statement)
 	{
-		
+		return new ResolvedStatement.Lock();
 	}
 
-	public void VisitSwitchStatement(Statement.Switch statement)
+	public ResolvedStatement VisitSwitchStatement(Statement.Switch statement)
 	{
-		
+		return new ResolvedStatement.Switch();
 	}
 
-	public void VisitExpressionStatement(Statement.ExpressionStatement statement)
+	public ResolvedStatement VisitExpressionStatement(Statement.ExpressionStatement statement)
 	{
-		
+		return new ResolvedStatement.ExpressionStatement();
 	}
 
-	public void VisitOperatorOverloadStatement(Statement.OperatorOverload statement)
+	public ResolvedStatement VisitOperatorOverloadStatement(Statement.OperatorOverload statement)
 	{
-		
+		return new ResolvedStatement.OperatorOverload();
 	}
 
-	public void VisitOperatorOverloadSignatureStatement(Statement.OperatorOverloadSignature statement)
+	public ResolvedStatement VisitOperatorOverloadSignatureStatement(Statement.OperatorOverloadSignature statement)
 	{
-		
+		return new ResolvedStatement.OperatorOverloadSignature();
 	}
 
-	public void VisitAwaitExpression(Expression.Await expression)
+	public ResolvedExpression VisitAwaitExpression(Expression.Await expression)
 	{
-		
+		return new ResolvedExpression.Await();
 	}
 
-	public void VisitConditionalExpression(Expression.Conditional expression)
+	public ResolvedExpression VisitConditionalExpression(Expression.Conditional expression)
 	{
-		
+		return new ResolvedExpression.Conditional();
 	}
 
-	public void VisitBinaryExpression(Expression.Binary expression)
+	public ResolvedExpression VisitBinaryExpression(Expression.Binary expression)
 	{
-		
+		return new ResolvedExpression.Binary();
 	}
 
-	public void VisitTypeRelationExpression(Expression.TypeRelation expression)
+	public ResolvedExpression VisitTypeRelationExpression(Expression.TypeRelation expression)
 	{
-		
+		return new ResolvedExpression.TypeRelation();
 	}
 
-	public void VisitUnaryExpression(Expression.Unary expression)
+	public ResolvedExpression VisitUnaryExpression(Expression.Unary expression)
 	{
-		
+		return new ResolvedExpression.Unary();
 	}
 
-	public void VisitIdentifierExpression(Expression.Identifier expression)
+	public ResolvedExpression VisitIdentifierExpression(Expression.Identifier expression)
 	{
-		
+		return new ResolvedExpression.Identifier();
 	}
 
-	public void VisitQualifierExpression(Expression.Qualifier expression)
+	public ResolvedExpression VisitQualifierExpression(Expression.Qualifier expression)
 	{
-		
+		return new ResolvedExpression.Qualifier();
 	}
 
-	public void VisitCallExpression(Expression.Call expression)
+	public ResolvedExpression VisitCallExpression(Expression.Call expression)
 	{
-		
+		return new ResolvedExpression.Call();
 	}
 
-	public void VisitLiteralExpression(Expression.Literal expression)
+	public ResolvedExpression VisitLiteralExpression(Expression.Literal expression)
 	{
-		
+		return new ResolvedExpression.Literal();
 	}
 
-	public void VisitInstantiateExpression(Expression.Instantiate expression)
+	public ResolvedExpression VisitInstantiateExpression(Expression.Instantiate expression)
 	{
-		
+		return new ResolvedExpression.Instantiate();
 	}
 
-	public void VisitCastExpression(Expression.Cast expression)
+	public ResolvedExpression VisitCastExpression(Expression.Cast expression)
 	{
-		
+		return new ResolvedExpression.Cast();
 	}
 
-	public void VisitIndexExpression(Expression.Index expression)
+	public ResolvedExpression VisitIndexExpression(Expression.Index expression)
 	{
-		
+		return new ResolvedExpression.Index();
 	}
 
-	public void VisitLambdaExpression(Expression.Lambda expression)
+	public ResolvedExpression VisitLambdaExpression(Expression.Lambda expression)
 	{
-		
+		return new ResolvedExpression.Lambda();
 	}
 }

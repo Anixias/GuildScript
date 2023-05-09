@@ -1,14 +1,14 @@
-using System.Collections;
-
 namespace GuildScript.Analysis.Semantics.Symbols;
 
-public sealed class ConstructorSymbol : MemberSymbol
+public sealed class IndexerSymbol : MemberSymbol
 {
+	public ResolvedType? Type { get; set; }
+	public bool Resolved { get; set; }
 	private readonly Dictionary<string, ParameterSymbol> parameters = new();
-	private readonly List<ConstructorSymbol> overloads = new();
-
-	public ConstructorSymbol(string name, Declaration declaration, AccessModifier accessModifier) : base(name,
-		declaration, accessModifier)
+	private readonly List<IndexerSymbol> overloads = new();
+	
+	public IndexerSymbol(string name, Declaration declaration, AccessModifier accessModifier)
+		: base(name, declaration, accessModifier)
 	{
 	}
 
@@ -17,6 +17,11 @@ public sealed class ConstructorSymbol : MemberSymbol
 		var parameter = new ParameterSymbol(name, declaration, isReference);
 		parameters.Add(name, parameter);
 		return parameter;
+	}
+
+	public void AddOverload(IndexerSymbol overload)
+	{
+		overloads.Add(overload);
 	}
 
 	public void ResolveParameter(string name, ResolvedType type)
@@ -29,18 +34,8 @@ public sealed class ConstructorSymbol : MemberSymbol
 		parameter.Resolved = true;
 	}
 
-	public void AddOverload(ConstructorSymbol overload)
-	{
-		overloads.Add(overload);
-	}
-
 	public IEnumerable<ParameterSymbol> GetParameters()
 	{
 		return parameters.Values;
-	}
-
-	public IEnumerable<ConstructorSymbol> GetOverloads()
-	{
-		return overloads;
 	}
 }
