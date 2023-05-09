@@ -524,16 +524,16 @@ public abstract class ResolvedStatement : ResolvedNode
 	{
 		public ResolvedType ReturnType { get; }
 		public OperatorSymbol OperatorSymbol { get; }
-		public ImmutableArray<ParameterSymbol> ParameterList { get; }
+		public MethodSymbol MethodSymbol { get; }
 		public ResolvedStatement Body { get; }
 
 		public OperatorOverload(ResolvedType returnType, OperatorSymbol operatorSymbol, 
-								IEnumerable<ParameterSymbol> parameterList, ResolvedStatement body)
+								MethodSymbol methodSymbol, ResolvedStatement body)
 
 		{
 			ReturnType = returnType;
 			OperatorSymbol = operatorSymbol;
-			ParameterList = parameterList.ToImmutableArray();
+			MethodSymbol = methodSymbol;
 			Body = body;
 		}
 
@@ -546,16 +546,15 @@ public abstract class ResolvedStatement : ResolvedNode
 	public sealed class OperatorOverloadSignature : ResolvedStatement
 	{
 		public ResolvedType ReturnType { get; }
-		public BinaryOperator BinaryOperator { get; }
-		public ImmutableArray<ParameterSymbol> ParameterList { get; }
+		public OperatorSymbol OperatorSymbol { get; }
+		public MethodSymbol MethodSymbol { get; }
 
-		public OperatorOverloadSignature(ResolvedType returnType, BinaryOperator binaryOperator,
-										 IEnumerable<ParameterSymbol> parameterList)
+		public OperatorOverloadSignature(ResolvedType returnType, OperatorSymbol operatorSymbol, MethodSymbol methodSymbol)
 
 		{
 			ReturnType = returnType;
-			BinaryOperator = binaryOperator;
-			ParameterList = parameterList.ToImmutableArray();
+			OperatorSymbol = operatorSymbol;
+			MethodSymbol = methodSymbol;
 		}
 
 		public override void AcceptVisitor(IVisitor visitor)
@@ -681,15 +680,12 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class ForEach : ResolvedStatement
 	{
-		public ResolvedType? IteratorType { get; }
 		public LocalVariableSymbol Iterator { get; }
 		public ResolvedExpression Enumerable { get; }
 		public ResolvedStatement Body { get; }
 
-		public ForEach(ResolvedType? iteratorType, LocalVariableSymbol iterator, ResolvedExpression enumerable,
-					   ResolvedStatement body)
+		public ForEach(LocalVariableSymbol iterator, ResolvedExpression enumerable, ResolvedStatement body)
 		{
-			IteratorType = iteratorType;
 			Iterator = iterator;
 			Enumerable = enumerable;
 			Body = body;
@@ -860,6 +856,16 @@ public abstract class ResolvedStatement : ResolvedNode
 			public PatternLabel(LocalVariableSymbol symbol)
 			{
 				Symbol = symbol;
+			}
+		}
+
+		public sealed class TypeMatchLabel : Label
+		{
+			public ResolvedType Type { get; }
+			
+			public TypeMatchLabel(ResolvedType type)
+			{
+				Type = type;
 			}
 		}
 		

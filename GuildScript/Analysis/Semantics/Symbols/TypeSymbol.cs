@@ -154,4 +154,5 @@ public sealed class NativeTypeSymbol : TypeSymbol
 	public static readonly NativeTypeSymbol Bool = new("bool");
 	public static readonly NativeTypeSymbol Object = new("object");
 	public static readonly NativeTypeSymbol String = new("string");
+	public static readonly NativeTypeSymbol Range = new("range");
 }

@@ -1,7 +1,157 @@
+using GuildScript.Analysis.Semantics;
+using GuildScript.Analysis.Semantics.Symbols;
+
 namespace GuildScript.Analysis.Syntax;
 
 public sealed class BinaryOperator
 {
+	private struct OperationTypeMapping
+	{
+		public ResolvedType Left { get; }
+		public ResolvedType Right { get; }
+		public BinaryOperation Operation { get; }
+		public ResolvedType Result { get; }
+		
+		public OperationTypeMapping(ResolvedType left, ResolvedType right, BinaryOperation operation,
+									ResolvedType result)
+		{
+			Left = left;
+			Right = right;
+			Operation = operation;
+			Result = result;
+		}
+	}
+
+	private static IEnumerable<OperationTypeMapping> GenerateSimpleMappings(
+		ResolvedType left, ResolvedType right, ResolvedType result)
+	{
+		yield return new OperationTypeMapping(left, right, BinaryOperation.Add, result);
+		yield return new OperationTypeMapping(left, right, BinaryOperation.Subtract, result);
+		yield return new OperationTypeMapping(left, right, BinaryOperation.Multiply, result);
+		yield return new OperationTypeMapping(left, right, BinaryOperation.Divide, result);
+		yield return new OperationTypeMapping(left, right, BinaryOperation.Modulo, result);
+		yield return new OperationTypeMapping(left, right, BinaryOperation.Exponent, result);
+	}
+
+	private static List<OperationTypeMapping> GenerateAllowedOperations()
+	{
+		var mappings = new List<OperationTypeMapping>();
+
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int8, SimpleResolvedType.Int8, SimpleResolvedType.Int8));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int8, SimpleResolvedType.UInt8, SimpleResolvedType.Int8));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int8, SimpleResolvedType.Int16, SimpleResolvedType.Int16));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int8, SimpleResolvedType.UInt16, SimpleResolvedType.UInt16));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int8, SimpleResolvedType.Int32, SimpleResolvedType.Int32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int8, SimpleResolvedType.UInt32, SimpleResolvedType.UInt32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int8, SimpleResolvedType.Int64, SimpleResolvedType.Int64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int8, SimpleResolvedType.UInt64, SimpleResolvedType.UInt64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int8, SimpleResolvedType.Single, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int8, SimpleResolvedType.Double, SimpleResolvedType.Double));
+
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt8, SimpleResolvedType.Int8, SimpleResolvedType.Int8));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt8, SimpleResolvedType.UInt8, SimpleResolvedType.UInt8));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt8, SimpleResolvedType.Int16, SimpleResolvedType.Int16));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt8, SimpleResolvedType.UInt16, SimpleResolvedType.UInt16));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt8, SimpleResolvedType.Int32, SimpleResolvedType.Int32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt8, SimpleResolvedType.UInt32, SimpleResolvedType.UInt32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt8, SimpleResolvedType.Int64, SimpleResolvedType.Int64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt8, SimpleResolvedType.UInt64, SimpleResolvedType.UInt64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt8, SimpleResolvedType.Single, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt8, SimpleResolvedType.Double, SimpleResolvedType.Double));
+		
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int16, SimpleResolvedType.Int8, SimpleResolvedType.Int16));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int16, SimpleResolvedType.UInt8, SimpleResolvedType.Int16));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int16, SimpleResolvedType.Int16, SimpleResolvedType.Int16));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int16, SimpleResolvedType.UInt16, SimpleResolvedType.Int16));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int16, SimpleResolvedType.Int32, SimpleResolvedType.Int32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int16, SimpleResolvedType.UInt32, SimpleResolvedType.UInt32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int16, SimpleResolvedType.Int64, SimpleResolvedType.Int64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int16, SimpleResolvedType.UInt64, SimpleResolvedType.UInt64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int16, SimpleResolvedType.Single, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int16, SimpleResolvedType.Double, SimpleResolvedType.Double));
+		
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt16, SimpleResolvedType.Int8, SimpleResolvedType.UInt16));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt16, SimpleResolvedType.UInt8, SimpleResolvedType.UInt16));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt16, SimpleResolvedType.Int16, SimpleResolvedType.Int16));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt16, SimpleResolvedType.UInt16, SimpleResolvedType.UInt16));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt16, SimpleResolvedType.Int32, SimpleResolvedType.Int32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt16, SimpleResolvedType.UInt32, SimpleResolvedType.UInt32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt16, SimpleResolvedType.Int64, SimpleResolvedType.Int64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt16, SimpleResolvedType.UInt64, SimpleResolvedType.UInt64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt16, SimpleResolvedType.Single, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt16, SimpleResolvedType.Double, SimpleResolvedType.Double));
+		
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int32, SimpleResolvedType.Int8, SimpleResolvedType.Int32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int32, SimpleResolvedType.UInt8, SimpleResolvedType.Int32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int32, SimpleResolvedType.Int16, SimpleResolvedType.Int32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int32, SimpleResolvedType.UInt16, SimpleResolvedType.Int32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int32, SimpleResolvedType.Int32, SimpleResolvedType.Int32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int32, SimpleResolvedType.UInt32, SimpleResolvedType.UInt32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int32, SimpleResolvedType.Int64, SimpleResolvedType.Int64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int32, SimpleResolvedType.UInt64, SimpleResolvedType.UInt64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int32, SimpleResolvedType.Single, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int32, SimpleResolvedType.Double, SimpleResolvedType.Double));
+		
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt32, SimpleResolvedType.Int8, SimpleResolvedType.UInt32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt32, SimpleResolvedType.UInt8, SimpleResolvedType.UInt32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt32, SimpleResolvedType.Int16, SimpleResolvedType.UInt32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt32, SimpleResolvedType.UInt16, SimpleResolvedType.UInt32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt32, SimpleResolvedType.Int32, SimpleResolvedType.Int32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt32, SimpleResolvedType.UInt32, SimpleResolvedType.UInt32));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt32, SimpleResolvedType.Int64, SimpleResolvedType.Int64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt32, SimpleResolvedType.UInt64, SimpleResolvedType.UInt64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt32, SimpleResolvedType.Single, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt32, SimpleResolvedType.Double, SimpleResolvedType.Double));
+		
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int64, SimpleResolvedType.Int8, SimpleResolvedType.Int64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int64, SimpleResolvedType.UInt8, SimpleResolvedType.Int64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int64, SimpleResolvedType.Int16, SimpleResolvedType.Int64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int64, SimpleResolvedType.UInt16, SimpleResolvedType.Int64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int64, SimpleResolvedType.Int32, SimpleResolvedType.Int64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int64, SimpleResolvedType.UInt32, SimpleResolvedType.Int64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int64, SimpleResolvedType.Int64, SimpleResolvedType.Int64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int64, SimpleResolvedType.UInt64, SimpleResolvedType.UInt64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int64, SimpleResolvedType.Single, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Int64, SimpleResolvedType.Double, SimpleResolvedType.Double));
+		
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt64, SimpleResolvedType.Int8, SimpleResolvedType.UInt64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt64, SimpleResolvedType.UInt8, SimpleResolvedType.UInt64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt64, SimpleResolvedType.Int16, SimpleResolvedType.UInt64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt64, SimpleResolvedType.UInt16, SimpleResolvedType.UInt64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt64, SimpleResolvedType.Int32, SimpleResolvedType.UInt64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt64, SimpleResolvedType.UInt32, SimpleResolvedType.UInt64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt64, SimpleResolvedType.Int64, SimpleResolvedType.Int64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt64, SimpleResolvedType.UInt64, SimpleResolvedType.UInt64));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt64, SimpleResolvedType.Single, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.UInt64, SimpleResolvedType.Double, SimpleResolvedType.Double));
+		
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Single, SimpleResolvedType.Int8, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Single, SimpleResolvedType.UInt8, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Single, SimpleResolvedType.Int16, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Single, SimpleResolvedType.UInt16, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Single, SimpleResolvedType.Int32, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Single, SimpleResolvedType.UInt32, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Single, SimpleResolvedType.Int64, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Single, SimpleResolvedType.UInt64, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Single, SimpleResolvedType.Single, SimpleResolvedType.Single));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Single, SimpleResolvedType.Double, SimpleResolvedType.Double));
+		
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Double, SimpleResolvedType.Int8, SimpleResolvedType.Double));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Double, SimpleResolvedType.UInt8, SimpleResolvedType.Double));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Double, SimpleResolvedType.Int16, SimpleResolvedType.Double));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Double, SimpleResolvedType.UInt16, SimpleResolvedType.Double));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Double, SimpleResolvedType.Int32, SimpleResolvedType.Double));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Double, SimpleResolvedType.UInt32, SimpleResolvedType.Double));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Double, SimpleResolvedType.Int64, SimpleResolvedType.Double));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Double, SimpleResolvedType.UInt64, SimpleResolvedType.Double));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Double, SimpleResolvedType.Single, SimpleResolvedType.Double));
+		mappings.AddRange(GenerateSimpleMappings(SimpleResolvedType.Double, SimpleResolvedType.Double, SimpleResolvedType.Double));
+		
+		return mappings;
+	}
+
+	private static readonly List<OperationTypeMapping> AllowedOperations = GenerateAllowedOperations();
+
 	public enum BinaryOperation
 	{
 		Assignment,
@@ -173,36 +323,53 @@ public sealed class BinaryOperator
 			_ => null
 		};
 	}
-
-	/*public static uint LookupBinaryOperationPrecedence(BinaryOperatorOperation operation)
+	
+	public ResolvedType? GetResultType(ResolvedType leftType, ResolvedType rightType)
 	{
-		switch (operation)
+		if (leftType.TypeSymbol is not NativeTypeSymbol)
+			return null;
+		
+		if (rightType.TypeSymbol is not NativeTypeSymbol)
+			return null;
+
+		switch (Operation)
 		{
-			case BinaryOperatorOperation.Assignment:
-			case BinaryOperatorOperation.AddAssign:
-			case BinaryOperatorOperation.SubtractAssign:
-			case BinaryOperatorOperation.MultiplyAssign:
-			case BinaryOperatorOperation.DivideAssign:
-			case BinaryOperatorOperation.ExponentAssign:
-			case BinaryOperatorOperation.ModuloAssign:
-			case BinaryOperatorOperation.BitwiseAndAssign:
-			case BinaryOperatorOperation.BitwiseOrAssign:
-			case BinaryOperatorOperation.BitwiseXorAssign:
-			case BinaryOperatorOperation.LogicalAndAssign:
-			case BinaryOperatorOperation.LogicalOrAssign:
-			case BinaryOperatorOperation.LogicalXorAssign:
-			case BinaryOperatorOperation.ShiftLeftAssign:
-			case BinaryOperatorOperation.ShiftRightAssign:
-			case BinaryOperatorOperation.RotateLeftAssign:
-			case BinaryOperatorOperation.RotateRightAssign:
-			case BinaryOperatorOperation.NullCoalescenceAssign:
-				return 0;
-			case BinaryOperatorOperation.RangeLeftExclusive:
-			case BinaryOperatorOperation.RangeLeftInclusive:
-			case BinaryOperatorOperation.RangeRightExclusive:
-			case BinaryOperatorOperation.RangeRightInclusive:
-				return 1;
-			
+			case BinaryOperation.Cast:
+				return rightType;
+			case BinaryOperation.Assignment:
+				return leftType;
+			case BinaryOperation.Equality:
+			case BinaryOperation.Inequality:
+			case BinaryOperation.LessThan:
+			case BinaryOperation.GreaterThan:
+			case BinaryOperation.LessEqual:
+			case BinaryOperation.GreaterEqual:
+				return SimpleResolvedType.Bool;
 		}
-	}*/
+		
+		if (leftType == SimpleResolvedType.Int8)
+		{
+			if (rightType == SimpleResolvedType.Int8)
+			{
+				switch (Operation)
+				{
+					case BinaryOperation.Add:
+					case BinaryOperation.AddAssign:
+					case BinaryOperation.Subtract:
+					case BinaryOperation.SubtractAssign:
+					case BinaryOperation.Multiply:
+					case BinaryOperation.MultiplyAssign:
+					case BinaryOperation.Divide:
+					case BinaryOperation.DivideAssign:
+					case BinaryOperation.Modulo:
+					case BinaryOperation.ModuloAssign:
+					case BinaryOperation.Exponent:
+					case BinaryOperation.ExponentAssign:
+						return SimpleResolvedType.Int8;
+					default:
+						return null;
+				}
+			}
+		}
+	}
 }

@@ -691,7 +691,7 @@ public sealed class Collector : Statement.IVisitor
 			var declaration = new Declaration(statement.OperatorTokens.Tokens[0], statement);
 
 			var parameters = string.Join(", ", statement.ParameterList);
-			var name = $"[{statement.OperatorTokens}] {statement.ReturnType} ({parameters})";
+			var name = $"[{statement.OperatorTokens}]({parameters})";
 
 			var modifiers = statement.Immutable
 				? new[] { MethodModifier.Global, MethodModifier.Immutable }
@@ -723,7 +723,9 @@ public sealed class Collector : Statement.IVisitor
 		{
 			// @TODO Add support for TokenSpan in Declaration
 			var declaration = new Declaration(statement.OperatorTokens.Tokens[0], statement);
-			var name = $"[{statement.OperatorTokens}] {statement.ReturnType}";
+			
+			var parameters = string.Join(", ", statement.ParameterList);
+			var name = $"[{statement.OperatorTokens}]({parameters})";
 			
 			var modifiers = statement.Immutable
 				? new[] { MethodModifier.Global, MethodModifier.Immutable }

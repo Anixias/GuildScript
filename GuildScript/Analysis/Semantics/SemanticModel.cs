@@ -230,6 +230,26 @@ public sealed class SemanticModel
 		}
 	}
 
+	public MethodSymbol AddOperatorOverload(string name, Declaration declaration, AccessModifier accessModifier,
+								  IEnumerable<MethodModifier> methodModifiers)
+	{
+		var symbol = new MethodSymbol(name, declaration, accessModifier, methodModifiers)
+		{
+			IsOperator = true
+		};
+		
+		symbols.Add(symbol);
+		CurrentScope?.AddSymbol(symbol);
+		switch (CurrentSymbol)
+		{
+			case TypeSymbol type:
+				type.AddMember(symbol);
+				return symbol;
+			default:
+				throw new Exception("Cannot declare operator overloads outside of types.");
+		}
+	}
+
 	public EventSymbol AddEvent(string name, Declaration declaration, AccessModifier accessModifier,
 								EventModifier eventModifier)
 	{

@@ -6,6 +6,7 @@ public sealed class MethodSymbol : MemberSymbol
 {
 	public ImmutableArray<MethodModifier> Modifiers { get; }
 	public ResolvedType? ReturnType { get; set; }
+	public bool IsOperator { get; set; }
 	
 	private readonly Dictionary<string, ParameterSymbol> parameters = new();
 	private readonly List<MethodSymbol> overloads = new();

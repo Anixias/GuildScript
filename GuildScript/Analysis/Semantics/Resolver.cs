@@ -198,6 +198,47 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		return null;
 	}
+	
+	private MemberSymbol? ResolveExpressionMemberSymbol(Expression expression)
+	{
+		switch (expression)
+		{
+			case Expression.Qualifier qualifier:
+			{
+				var symbol = semanticModel.FindSymbol(qualifier.NameToken.Text);
+				if (symbol is MemberSymbol memberSymbol)
+					return memberSymbol;
+				
+				throw new Exception($"The member '{qualifier.NameToken.Text}' does not exist in this context.");
+			}
+			case Expression.Identifier identifier:
+			{
+				var symbol = semanticModel.FindSymbol(identifier.NameToken.Text);
+				if (symbol is MemberSymbol memberSymbol)
+					return memberSymbol;
+				
+				throw new Exception($"The member '{identifier.NameToken.Text}' does not exist in this context.");
+			}
+			case Expression.Binary binary:
+			{
+				var operation = binary.Operator.Operation;
+				if (operation != BinaryOperator.BinaryOperation.Access &&
+					operation != BinaryOperator.BinaryOperation.ConditionalAccess)
+					throw new Exception($"Invalid operator for member resolution: {binary.Operator}");
+
+				var left = ResolveExpressionMemberSymbol(binary.Left);
+				if (left is null)
+					throw new Exception($"'{binary.Left}' is not a valid member.");
+				semanticModel.VisitSymbol(left);
+				var right = ResolveExpressionMemberSymbol(binary.Right);
+				semanticModel.Return();
+
+				return right;
+			}
+		}
+
+		return null;
+	}
 
 	private ResolvedType ResolveExpressionType(ExpressionTypeSyntax expressionTypeSyntax)
 	{
@@ -736,97 +777,352 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedStatement VisitControlStatement(Statement.Control statement)
 	{
-		return new ResolvedStatement.Control();
+		semanticModel.EnterScope(statement);
+
+		var ifExpression = statement.IfExpression.AcceptVisitor(this);
+		var ifStatement = statement.IfStatement.AcceptVisitor(this);
+		var elseStatement = statement.ElseStatement?.AcceptVisitor(this);
+
+		semanticModel.ExitScope();
+		
+		return new ResolvedStatement.Control(ifExpression, ifStatement, elseStatement);
 	}
 
 	public ResolvedStatement VisitWhileStatement(Statement.While statement)
 	{
-		return new ResolvedStatement.While();
+		semanticModel.EnterScope(statement);
+
+		var condition = statement.Condition.AcceptVisitor(this);
+		var body = statement.Body.AcceptVisitor(this);
+		
+		semanticModel.ExitScope();
+
+		return new ResolvedStatement.While(condition, body);
 	}
 
 	public ResolvedStatement VisitDoWhileStatement(Statement.DoWhile statement)
 	{
-		return new ResolvedStatement.DoWhile();
+		semanticModel.EnterScope(statement);
+
+		var body = statement.Body.AcceptVisitor(this);
+		var condition = statement.Condition.AcceptVisitor(this);
+		
+		semanticModel.ExitScope();
+		
+		return new ResolvedStatement.DoWhile(body, condition);
 	}
 
 	public ResolvedStatement VisitForStatement(Statement.For statement)
 	{
-		return new ResolvedStatement.For();
+		semanticModel.EnterScope(statement);
+
+		var initializer = statement.Initializer?.AcceptVisitor(this);
+		var condition = statement.Condition?.AcceptVisitor(this);
+		var increment = statement.Increment?.AcceptVisitor(this);
+		var body = statement.Body.AcceptVisitor(this);
+		
+		semanticModel.ExitScope();
+		
+		return new ResolvedStatement.For(initializer, condition, increment, body);
 	}
 
 	public ResolvedStatement VisitForEachStatement(Statement.ForEach statement)
 	{
-		return new ResolvedStatement.ForEach();
+		semanticModel.EnterScope(statement);
+		
+		var symbol = semanticModel.FindSymbol(statement.Iterator.Text);
+		if (symbol is not LocalVariableSymbol iteratorSymbol)
+			throw new Exception($"Failed to resolve iterator '{statement.Iterator.Text}'.");
+
+		var iteratorType = statement.IteratorType is null ? null : ResolveType(statement.IteratorType);
+		iteratorSymbol.Type = iteratorType;
+		iteratorSymbol.Resolved = true;
+		var enumerable = statement.Enumerable.AcceptVisitor(this);
+		var body = statement.Body.AcceptVisitor(this);
+		
+		semanticModel.ExitScope();
+		
+		return new ResolvedStatement.ForEach(iteratorSymbol, enumerable, body);
 	}
 
 	public ResolvedStatement VisitRepeatStatement(Statement.Repeat statement)
 	{
-		return new ResolvedStatement.Repeat();
+		semanticModel.EnterScope(statement);
+
+		var repetitions = statement.Repetitions.AcceptVisitor(this);
+		var body = statement.Body.AcceptVisitor(this);
+		
+		semanticModel.ExitScope();
+
+		return new ResolvedStatement.Repeat(repetitions, body);
 	}
 
 	public ResolvedStatement VisitReturnStatement(Statement.Return statement)
 	{
-		return new ResolvedStatement.Return();
+		var expression = statement.Expression?.AcceptVisitor(this);
+		return new ResolvedStatement.Return(expression);
 	}
 
 	public ResolvedStatement VisitThrowStatement(Statement.Throw statement)
 	{
-		return new ResolvedStatement.Throw();
+		var expression = statement.Expression?.AcceptVisitor(this);
+		return new ResolvedStatement.Throw(expression);
 	}
 
 	public ResolvedStatement VisitSealStatement(Statement.Seal statement)
 	{
-		return new ResolvedStatement.Seal();
+		var symbol = semanticModel.FindSymbol(statement.Identifier.Text);
+		if (symbol is null)
+			throw new Exception($"Failed to resolve symbol '{statement.Identifier.Text}'.");
+		
+		return new ResolvedStatement.Seal(symbol);
 	}
 
 	public ResolvedStatement VisitTryStatement(Statement.Try statement)
 	{
-		return new ResolvedStatement.Try();
+		semanticModel.EnterScope(statement);
+		
+		var tryStatement = statement.TryStatement.AcceptVisitor(this);
+		LocalVariableSymbol? catchVariableSymbol = null;
+
+		if (statement.CatchNameToken is not null)
+		{
+			var declaration = new Declaration(statement.CatchNameToken, statement);
+			catchVariableSymbol = new LocalVariableSymbol(statement.CatchNameToken.Text, declaration, statement.CatchType)
+			{
+				Type = statement.CatchType is null ? null : ResolveType(statement.CatchType),
+				Resolved = true
+			};
+		}
+
+		var catchStatement = statement.CatchStatement?.AcceptVisitor(this);
+		var finallyStatement = statement.FinallyStatement?.AcceptVisitor(this);
+		
+		semanticModel.ExitScope();
+		
+		return new ResolvedStatement.Try(tryStatement, catchVariableSymbol, catchStatement, finallyStatement);
 	}
 
 	public ResolvedStatement VisitVariableDeclarationStatement(Statement.VariableDeclaration statement)
 	{
-		return new ResolvedStatement.VariableDeclaration();
+		var symbol = semanticModel.FindSymbol(statement.Identifier.Text);
+		if (symbol is not LocalVariableSymbol localVariableSymbol)
+			throw new Exception($"Failed to resolved local variable '{statement.Identifier.Text}'.");
+
+		var type = statement.Type is null ? null : ResolveType(statement.Type);
+		localVariableSymbol.Type = type;
+		
+		var initializer = statement.Initializer?.AcceptVisitor(this);
+		
+		return new ResolvedStatement.VariableDeclaration(localVariableSymbol, initializer);
 	}
 
 	public ResolvedStatement VisitLockStatement(Statement.Lock statement)
 	{
-		return new ResolvedStatement.Lock();
+		semanticModel.EnterScope(statement);
+
+		var symbol = ResolveExpressionMemberSymbol(statement.Expression);
+		if (symbol is not FieldSymbol fieldSymbol)
+			throw new Exception("Invalid lock target.");
+		
+		var body = statement.Body.AcceptVisitor(this);
+		
+		semanticModel.ExitScope();
+		
+		return new ResolvedStatement.Lock(fieldSymbol, body);
 	}
 
 	public ResolvedStatement VisitSwitchStatement(Statement.Switch statement)
 	{
-		return new ResolvedStatement.Switch();
+		semanticModel.EnterScope(statement);
+
+		var switchExpression = statement.Expression.AcceptVisitor(this);
+
+		var sections = new List<ResolvedStatement.Switch.Section>();
+		foreach (var section in statement.Sections)
+		{
+			semanticModel.EnterScope(section.Body);
+			var body = section.Body.AcceptVisitor(this);
+			var labels = new List<ResolvedStatement.Switch.Label>();
+			foreach (var label in section.Labels)
+			{
+				switch (label)
+				{
+					case Statement.Switch.PatternLabel patternLabel:
+						if (patternLabel.Identifier is null)
+						{
+							var type = ResolveType(patternLabel.Type);
+							if (type is null)
+								throw new Exception($"Failed to resolve type '{patternLabel.Type}'.");
+							
+							labels.Add(new ResolvedStatement.Switch.TypeMatchLabel(type));
+						}
+						else
+						{
+							var symbol = semanticModel.FindSymbol(patternLabel.Identifier.Text);
+							if (symbol is not LocalVariableSymbol localVariableSymbol)
+								throw new Exception(
+									$"Failed to resolve local variable '{patternLabel.Identifier.Text}'.");
+
+							localVariableSymbol.Type = ResolveType(patternLabel.Type);
+							localVariableSymbol.Resolved = true;
+							
+							labels.Add(new ResolvedStatement.Switch.PatternLabel(localVariableSymbol));
+						}
+
+						break;
+					case Statement.Switch.ExpressionLabel expressionLabel:
+						var expression = expressionLabel.Expression.AcceptVisitor(this);
+						labels.Add(new ResolvedStatement.Switch.ExpressionLabel(expression));
+						break;
+				}
+			}
+			semanticModel.ExitScope();
+			sections.Add(new ResolvedStatement.Switch.Section(labels, body));
+		}
+		
+		semanticModel.ExitScope();
+		
+		return new ResolvedStatement.Switch(switchExpression, sections);
 	}
 
 	public ResolvedStatement VisitExpressionStatement(Statement.ExpressionStatement statement)
 	{
-		return new ResolvedStatement.ExpressionStatement();
+		var expression = statement.Expression.AcceptVisitor(this);
+		return new ResolvedStatement.ExpressionStatement(expression);
+	}
+
+	private OperatorSymbol? ResolveOperator(string @operator)
+	{
+		if (NativeOperatorSymbol.LookupOperator(@operator) is { } nativeOperatorSymbol)
+			return nativeOperatorSymbol;
+
+		return null;
 	}
 
 	public ResolvedStatement VisitOperatorOverloadStatement(Statement.OperatorOverload statement)
 	{
-		return new ResolvedStatement.OperatorOverload();
+		var returnType = ResolveType(statement.ReturnType);
+		if (returnType is null)
+			throw new Exception($"Failed to resolve return type '{statement.ReturnType}'.");
+		
+		var parameterNames = string.Join(", ", statement.ParameterList);
+		var name = $"[{statement.OperatorTokens}] {statement.ReturnType} ({parameterNames})";
+
+		var symbol = semanticModel.FindSymbol(name);
+		if (symbol is not MethodSymbol methodSymbol)
+			throw new Exception("Failed to resolve operator overload.");
+		
+		semanticModel.EnterScope(statement);
+		foreach (var parameter in statement.ParameterList)
+		{
+			var parameterDeclaration = new Declaration(parameter.Name, statement);
+			semanticModel.AddSymbol(methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
+				parameter.IsReference));
+
+			var parameterType = ResolveType(parameter.Type);
+			if (parameterType is null)
+				throw new Exception($"Failed to resolve type '{parameter.Type}'.");
+			
+			methodSymbol.ResolveParameter(parameter.Name.Text, parameterType);
+		}
+			
+		var body = statement.Body.AcceptVisitor(this);
+		semanticModel.ExitScope();
+
+		methodSymbol.Resolved = true;
+		var operatorSymbol = ResolveOperator(statement.OperatorTokens.ToString());
+		if (operatorSymbol is null)
+			throw new Exception($"Failed to resolve operator '{statement.OperatorTokens}'.");
+		
+		return new ResolvedStatement.OperatorOverload(returnType, operatorSymbol, methodSymbol, body);
 	}
 
 	public ResolvedStatement VisitOperatorOverloadSignatureStatement(Statement.OperatorOverloadSignature statement)
-	{
-		return new ResolvedStatement.OperatorOverloadSignature();
+	{var returnType = ResolveType(statement.ReturnType);
+		if (returnType is null)
+			throw new Exception($"Failed to resolve return type '{statement.ReturnType}'.");
+		
+		var parameterNames = string.Join(", ", statement.ParameterList);
+		var name = $"[{statement.OperatorTokens}] {statement.ReturnType} ({parameterNames})";
+
+		var symbol = semanticModel.FindSymbol(name);
+		if (symbol is not MethodSymbol methodSymbol)
+			throw new Exception("Failed to resolve operator overload.");
+		
+		semanticModel.EnterScope(statement);
+		foreach (var parameter in statement.ParameterList)
+		{
+			var parameterDeclaration = new Declaration(parameter.Name, statement);
+			semanticModel.AddSymbol(methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
+				parameter.IsReference));
+
+			var parameterType = ResolveType(parameter.Type);
+			if (parameterType is null)
+				throw new Exception($"Failed to resolve type '{parameter.Type}'.");
+			
+			methodSymbol.ResolveParameter(parameter.Name.Text, parameterType);
+		}
+		
+		semanticModel.ExitScope();
+
+		methodSymbol.Resolved = true;
+		var operatorSymbol = ResolveOperator(statement.OperatorTokens.ToString());
+		if (operatorSymbol is null)
+			throw new Exception($"Failed to resolve operator '{statement.OperatorTokens}'.");
+		
+		return new ResolvedStatement.OperatorOverloadSignature(returnType, operatorSymbol, methodSymbol);
 	}
 
 	public ResolvedExpression VisitAwaitExpression(Expression.Await expression)
 	{
-		return new ResolvedExpression.Await();
+		var resolvedExpression = expression.AcceptVisitor(this);
+		return new ResolvedExpression.Await(resolvedExpression);
 	}
 
 	public ResolvedExpression VisitConditionalExpression(Expression.Conditional expression)
 	{
-		return new ResolvedExpression.Conditional();
+		var condition = expression.Condition.AcceptVisitor(this);
+		var trueExpression = expression.TrueExpression.AcceptVisitor(this);
+		var falseExpression = expression.FalseExpression.AcceptVisitor(this);
+		return new ResolvedExpression.Conditional(condition, trueExpression, falseExpression);
+	}
+
+	private ResolvedType? ResolveBinaryOperation(ResolvedType? left, BinaryOperator binaryOperator,
+												 ResolvedType? right)
+	{
+		if (left is null || right is null)
+			return null;
+
+		if (left.TypeSymbol is NativeTypeSymbol && right.TypeSymbol is NativeTypeSymbol)
+			return binaryOperator.GetResultType(left, right);
 	}
 
 	public ResolvedExpression VisitBinaryExpression(Expression.Binary expression)
 	{
-		return new ResolvedExpression.Binary();
+		var left = expression.Left.AcceptVisitor(this);
+		var right = expression.Right.AcceptVisitor(this);
+
+		if (left.Type is null || right.Type is null)
+			throw new Exception("Cannot operate on void types.");
+
+		ResolvedType? expressionType = null;
+		
+		if (left.Type.TypeSymbol is NativeTypeSymbol nativeLeftType &&
+			right.Type.TypeSymbol is NativeTypeSymbol nativeRightType)
+		{
+			switch (expression.Operator.Operation)
+			{
+				case BinaryOperator.BinaryOperation.Assignment:
+					expressionType = left.Type;
+					break;
+				default:
+					throw new Exception($"Cannot use operator '{expression.Operator}' on types " +
+										$"'{nativeLeftType.Name}' and '{nativeRightType.Name}'.");
+			}
+		}
+
+		return new ResolvedExpression.Binary(left, expression.Operator, right, expressionType);
 	}
 
 	public ResolvedExpression VisitTypeRelationExpression(Expression.TypeRelation expression)
