@@ -167,16 +167,16 @@ public abstract class ResolvedExpression : ResolvedNode
 	public sealed class Unary : ResolvedExpression
 	{
 		public ResolvedExpression Operand { get; }
-		public SyntaxToken OperatorToken { get; }
+		public UnaryOperator Operator { get; }
 		public override ResolvedType? Type { get; }
 		public bool IsPostfix { get; }
 		public MethodSymbol? OperatorMethod { get; }
 
-		public Unary(ResolvedExpression operand, SyntaxToken operatorToken, ResolvedType? type,
+		public Unary(ResolvedExpression operand, UnaryOperator @operator, ResolvedType? type,
 					 MethodSymbol? operatorMethod, bool isPostfix = false)
 		{
 			Operand = operand;
-			OperatorToken = operatorToken;
+			Operator = @operator;
 			Type = type;
 			OperatorMethod = operatorMethod;
 			IsPostfix = isPostfix;

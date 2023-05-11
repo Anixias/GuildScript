@@ -1209,15 +1209,10 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			// Search for operator overloading
 			var overload = operand.Type.TypeSymbol.FindOperatorOverload(operand.Type, expression.Operator);
 
-			if (leftOverload is not null)
+			if (overload is not null)
 			{
-				expressionType = leftOverload.ReturnType;
-				operatorMethod = leftOverload;
-			}
-			else if (rightOverload is not null)
-			{
-				expressionType = rightOverload.ReturnType;
-				operatorMethod = rightOverload;
+				expressionType = overload.ReturnType;
+				operatorMethod = overload;
 			}
 		}
 
