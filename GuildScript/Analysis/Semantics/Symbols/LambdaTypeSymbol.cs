@@ -1,5 +1,3 @@
-using System.Collections.Immutable;
-
 namespace GuildScript.Analysis.Semantics.Symbols;
 
 public sealed class LambdaTypeSymbol : TypeSymbol

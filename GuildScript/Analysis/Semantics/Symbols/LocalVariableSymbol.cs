@@ -2,7 +2,7 @@ using GuildScript.Analysis.Syntax;
 
 namespace GuildScript.Analysis.Semantics.Symbols;
 
-public sealed class LocalVariableSymbol : LocalSymbol
+public sealed class LocalVariableSymbol : LocalSymbol, ITypedSymbol
 {
 	public TypeSyntax? TypeSyntax { get; }
 	public ResolvedType? Type { get; set; }

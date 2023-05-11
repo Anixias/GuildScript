@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 
 namespace GuildScript.Analysis.Semantics.Symbols;
 
-public sealed class PropertySymbol : MemberSymbol
+public sealed class PropertySymbol : MemberSymbol, ITypedSymbol
 {
 	public ImmutableArray<MethodModifier> Modifiers { get; }
 	public ResolvedType? Type { get; set; }

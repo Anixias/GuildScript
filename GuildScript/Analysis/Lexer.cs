@@ -499,7 +499,7 @@ public sealed class Lexer
 
 	private void ScanNumber()
 	{
-		type = SyntaxTokenType.IntegerConstant;
+		type = SyntaxTokenType.Int64Constant;
 		while (char.IsDigit(Current))
 		{
 			Advance();
@@ -507,7 +507,7 @@ public sealed class Lexer
 
 		if (Current == '.')
 		{
-			type = SyntaxTokenType.RealConstant;
+			type = SyntaxTokenType.DoubleConstant;
 			Advance();
 			
 			while (char.IsDigit(Current))

@@ -6,6 +6,7 @@ namespace GuildScript.Analysis.Semantics;
 public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression.IVisitor<ResolvedExpression>
 {
 	private readonly SemanticModel semanticModel;
+	private readonly Dictionary<TypeSymbol, SimpleResolvedType> typeSymbolLookup = new();
 
 	public Resolver(SemanticModel semanticModel)
 	{
@@ -122,7 +123,11 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			case NamedTypeSyntax namedTypeSyntax:
 				var symbol = semanticModel.FindSymbol(namedTypeSyntax.Name);
 				if (symbol is TypeSymbol typeSymbol)
-					return new SimpleResolvedType(typeSymbol);
+				{
+					var newType = new SimpleResolvedType(typeSymbol);
+					RegisterTypeSymbol(typeSymbol, newType);
+					return newType;
+				}
 
 				throw new Exception($"The type '{namedTypeSyntax.Name}' does not exist in this context.");
 			case ArrayTypeSyntax arrayTypeSyntax:
@@ -156,6 +161,11 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		}
 
 		return null;
+	}
+
+	private void RegisterTypeSymbol(TypeSymbol typeSymbol, SimpleResolvedType resolvedType)
+	{
+		typeSymbolLookup.Add(typeSymbol, resolvedType);
 	}
 
 	private TypeSymbol? ResolveExpressionTypeSymbol(Expression expression)
@@ -265,6 +275,60 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		return null;
 	}
 
+	private Symbol? ResolveExpressionValueSymbol(Expression expression)
+	{
+		switch (expression)
+		{
+			case Expression.Qualifier qualifier:
+			{
+				var symbol = semanticModel.FindSymbol(qualifier.NameToken.Text);
+
+				if (symbol is null)
+					throw new Exception($"The symbol '{qualifier.NameToken.Text}' does not exist in this context.");
+				
+				return symbol switch
+				{
+					MemberSymbol memberSymbol => memberSymbol,
+					LocalSymbol localSymbol => localSymbol,
+					_ => throw new Exception($"The symbol '{qualifier.NameToken.Text}' is not valid in this context.")
+				};
+			}
+			case Expression.Identifier identifier:
+			{
+				var symbol = semanticModel.FindSymbol(identifier.NameToken.Text);
+
+				if (symbol is null)
+					throw new Exception($"The symbol '{identifier.NameToken.Text}' does not exist in this context.");
+				
+				return symbol switch
+				{
+					MemberSymbol memberSymbol => memberSymbol,
+					LocalSymbol localSymbol => localSymbol,
+					_ => throw new Exception($"The symbol '{identifier.NameToken.Text}' is not valid in this context.")
+				};
+			}
+			case Expression.Binary binary:
+			{
+				var operation = binary.Operator.Operation;
+				if (operation != BinaryOperator.BinaryOperation.Access &&
+					operation != BinaryOperator.BinaryOperation.ConditionalAccess)
+					throw new Exception($"Invalid operator for member resolution: {binary.Operator}");
+
+				var left = ResolveExpressionValueSymbol(binary.Left);
+				if (left is null)
+					throw new Exception($"The symbol '{binary.Left}' does not exist in this context.");
+				
+				semanticModel.VisitSymbol(left);
+				var right = ResolveExpressionMemberSymbol(binary.Right);
+				semanticModel.Return();
+
+				return right;
+			}
+		}
+
+		return null;
+	}
+
 	private ResolvedType ResolveExpressionType(ExpressionTypeSyntax expressionTypeSyntax)
 	{
 		if (ResolveExpressionTypeSymbol(expressionTypeSyntax.Expression) is { } typeSymbol)
@@ -365,7 +429,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.ExitScope();
 		semanticModel.Return();
 		return new ResolvedStatement.Class(classSymbol.AccessModifier, classSymbol.ClassModifier, classSymbol,
-			classSymbol.TemplateParameters, classSymbol.BaseClass, members);
+			classSymbol.GetTemplateParameters(), classSymbol.BaseClass, members);
 	}
 
 	public ResolvedStatement VisitStructStatement(Statement.Struct statement)
@@ -383,7 +447,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.Return();
 
 		return new ResolvedStatement.Struct(structSymbol.AccessModifier, structSymbol.StructModifier, structSymbol,
-			members, structSymbol.TemplateParameters);
+			members, structSymbol.GetTemplateParameters());
 	}
 
 	public ResolvedStatement VisitInterfaceStatement(Statement.Interface statement)
@@ -401,7 +465,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.Return();
 
 		return new ResolvedStatement.Interface(interfaceSymbol.AccessModifier, interfaceSymbol, members,
-			interfaceSymbol.TemplateParameters);
+			interfaceSymbol.GetTemplateParameters());
 	}
 
 	public ResolvedStatement VisitEnumStatement(Statement.Enum statement)
@@ -737,7 +801,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		methodSymbol.Resolved = true;
 		return new ResolvedStatement.Method(methodSymbol.AccessModifier, methodSymbol.Modifiers, returnType,
 			methodSymbol, body, methodSymbol.GetParameters(), statement.AsyncToken is not null,
-			methodSymbol.TemplateParameters);
+			methodSymbol.GetTemplateParameters());
 	}
 
 	public ResolvedStatement VisitMethodSignatureStatement(Statement.MethodSignature statement)
@@ -766,7 +830,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		methodSymbol.Resolved = true;
 		return new ResolvedStatement.MethodSignature(methodSymbol.Modifiers, returnType, methodSymbol,
-			methodSymbol.GetParameters(), statement.AsyncToken is not null, methodSymbol.TemplateParameters);
+			methodSymbol.GetParameters(), statement.AsyncToken is not null, methodSymbol.GetTemplateParameters());
 	}
 
 	public ResolvedStatement VisitFieldStatement(Statement.Field statement)
@@ -1225,16 +1289,8 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var symbol = semanticModel.FindSymbol(expression.NameToken.Text);
 		if (symbol is null)
 			throw new Exception($"Failed to resolve identifier '{expression.NameToken.Text}'.");
-		
-		var type = symbol switch
-		{
-			MethodSymbol => SimpleResolvedType.Method,
-			LocalVariableSymbol localVariableSymbol => localVariableSymbol.Type,
-			ParameterSymbol parameterSymbol => parameterSymbol.Type,
-			FieldSymbol fieldSymbol => fieldSymbol.Type,
-			PropertySymbol propertySymbol => propertySymbol.Type,
-			_ => throw new Exception($"Invalid use of identifier '{expression.NameToken.Text}'.")
-		};
+
+		var type = symbol is ITypedSymbol typedSymbol ? typedSymbol.Type : null;
 
 		if (type is null)
 			throw new Exception($"Cannot reference '{expression.NameToken.Text}' before it has been resolved.");
@@ -1248,16 +1304,8 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var symbol = semanticModel.FindSymbol(expression.NameToken.Text);
 		if (symbol is null)
 			throw new Exception($"Failed to resolve qualifier '{expression.NameToken.Text}'.");
-		
-		var type = symbol switch
-		{
-			MethodSymbol => SimpleResolvedType.Method,
-			LocalVariableSymbol localVariableSymbol => localVariableSymbol.Type,
-			ParameterSymbol parameterSymbol => parameterSymbol.Type,
-			FieldSymbol fieldSymbol => fieldSymbol.Type,
-			PropertySymbol propertySymbol => propertySymbol.Type,
-			_ => throw new Exception($"Invalid use of qualifier '{expression.NameToken.Text}'.")
-		};
+
+		var type = symbol is ITypedSymbol typedSymbol ? typedSymbol.Type : null;
 
 		if (type is null)
 			throw new Exception($"Cannot reference '{expression.NameToken.Text}' before it has been resolved.");
@@ -1267,13 +1315,108 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedExpression VisitCallExpression(Expression.Call expression)
 	{
-		return new ResolvedExpression.Call();
+		var sourceSymbol = ResolveExpressionValueSymbol(expression.Function);
+		if (sourceSymbol is not ITypedSymbol typedSymbol)
+			throw new Exception("Invalid call target.");
+
+		var argumentTypes = new List<ResolvedType?>();
+		var arguments = new List<ResolvedExpression>();
+		foreach (var argument in expression.Arguments)
+		{
+			var resolvedArgument = argument.AcceptVisitor(this);
+			arguments.Add(resolvedArgument);
+			argumentTypes.Add(resolvedArgument.Type);
+		}
+
+		var templateArguments = new List<TypeSymbol>();
+		foreach (var templateArgument in expression.TemplateArguments)
+		{
+			var typeSymbol = ResolveExpressionTypeSymbol(templateArgument);
+			if (typeSymbol is null)
+				throw new Exception("Failed to resolve template argument.");
+			
+			templateArguments.Add(typeSymbol);
+		}
+
+		ResolvedType? resolvedType = null;
+		var methodSymbol = typedSymbol.Type?.TypeSymbol.FindMethod(argumentTypes, templateArguments);
+
+		if (resolvedType is null)
+			throw new Exception("Invalid call target.");
+
+		return new ResolvedExpression.Call(methodSymbol, templateArguments, arguments);
 	}
 
 	// @TODO
 	public ResolvedExpression VisitLiteralExpression(Expression.Literal expression)
 	{
-		return new ResolvedExpression.Literal();
+		var thisSymbol = semanticModel.CurrentSymbol;
+		ResolvedType? type;
+		switch (expression.Token.Type)
+		{
+			case SyntaxTokenType.This:
+				if (thisSymbol is not TypeSymbol thisTypeSymbol)
+					throw new Exception("Invalid usage of 'this'.");
+
+				type = typeSymbolLookup.TryGetValue(thisTypeSymbol, out var simpleType) ? simpleType : null;
+				break;
+			case SyntaxTokenType.Base:
+				if (thisSymbol is not ClassSymbol classSymbol)
+					throw new Exception("'base' is only valid within classes.");
+
+				if (classSymbol.BaseClass is not { } baseClass)
+					throw new Exception("No base class found.");
+				
+				type = typeSymbolLookup.TryGetValue(baseClass, out var inheritedType) ? inheritedType : null;
+				break;
+			case SyntaxTokenType.Int8Constant:
+				type = SimpleResolvedType.Int8;
+				break;
+			case SyntaxTokenType.Int16Constant:
+				type = SimpleResolvedType.Int16;
+				break;
+			case SyntaxTokenType.Int32Constant:
+				type = SimpleResolvedType.Int32;
+				break;
+			case SyntaxTokenType.Int64Constant:
+				type = SimpleResolvedType.Int64;
+				break;
+			case SyntaxTokenType.UInt8Constant:
+				type = SimpleResolvedType.UInt8;
+				break;
+			case SyntaxTokenType.UInt16Constant:
+				type = SimpleResolvedType.UInt16;
+				break;
+			case SyntaxTokenType.UInt32Constant:
+				type = SimpleResolvedType.UInt32;
+				break;
+			case SyntaxTokenType.UInt64Constant:
+				type = SimpleResolvedType.UInt64;
+				break;
+			case SyntaxTokenType.SingleConstant:
+				type = SimpleResolvedType.Single;
+				break;
+			case SyntaxTokenType.DoubleConstant:
+				type = SimpleResolvedType.Double;
+				break;
+			case SyntaxTokenType.StringConstant:
+				type = SimpleResolvedType.String;
+				break;
+			case SyntaxTokenType.CharacterConstant:
+				type = SimpleResolvedType.Char;
+				break;
+			case SyntaxTokenType.True:
+			case SyntaxTokenType.False:
+				type = SimpleResolvedType.Bool;
+				break;
+			case SyntaxTokenType.Null:
+				type = null;
+				break;
+			default:
+				throw new Exception("Invalid literal expression.");
+		}
+		
+		return new ResolvedExpression.Literal(expression.Token, type);
 	}
 
 	public ResolvedExpression VisitInstantiateExpression(Expression.Instantiate expression)
@@ -1314,7 +1457,40 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedExpression VisitIndexExpression(Expression.Index expression)
 	{
-		return new ResolvedExpression.Index();
+		var sourceSymbol = ResolveExpressionValueSymbol(expression.Expression);
+		if (sourceSymbol is not ITypedSymbol typedSymbol)
+			throw new Exception("Invalid indexing target.");
+		
+		var key = expression.Key.AcceptVisitor(this);
+
+		ResolvedType? resolvedType = null;
+		var indexerSymbol = typedSymbol.Type?.TypeSymbol.FindIndexer(key.Type);
+		switch (typedSymbol.Type)
+		{
+			case ArrayResolvedType arrayResolvedType:
+				if (key.Type != SimpleResolvedType.Int8 && key.Type != SimpleResolvedType.UInt8 &&
+					key.Type != SimpleResolvedType.Int16 && key.Type != SimpleResolvedType.UInt16 &&
+					key.Type != SimpleResolvedType.Int32 && key.Type != SimpleResolvedType.UInt32 &&
+					key.Type != SimpleResolvedType.Int64 && key.Type != SimpleResolvedType.UInt64)
+					throw new Exception("Invalid indexing key.");
+				
+				resolvedType = arrayResolvedType.ElementType;
+				break;
+			case SimpleResolvedType simpleResolvedType:
+				if (indexerSymbol is null)
+					throw new Exception("Cannot find a matching indexer statement in indexing target.");
+
+				resolvedType = simpleResolvedType;
+				break;
+			case TemplatedResolvedType templatedResolvedType:
+				// @TODO
+				break;
+		}
+
+		if (resolvedType is null)
+			throw new Exception("Invalid indexing target.");
+
+		return new ResolvedExpression.Index(indexerSymbol, key, expression.IsConditional, resolvedType);
 	}
 
 	public ResolvedExpression VisitLambdaExpression(Expression.Lambda expression)

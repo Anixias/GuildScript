@@ -2,8 +2,9 @@ using System.Collections;
 
 namespace GuildScript.Analysis.Semantics.Symbols;
 
-public sealed class ConstructorSymbol : MemberSymbol
+public sealed class ConstructorSymbol : MemberSymbol, ITypedSymbol
 {
+	public ResolvedType Type => SimpleResolvedType.Method;
 	private readonly Dictionary<string, ParameterSymbol> parameters = new();
 	private readonly List<ConstructorSymbol> overloads = new();
 

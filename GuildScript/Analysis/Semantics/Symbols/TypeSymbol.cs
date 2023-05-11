@@ -172,7 +172,7 @@ public abstract class TypeSymbol : Symbol
 		return validOverloads.Count switch
 		{
 			1   => validOverloads[0],
-			> 1 => throw new Exception("Ambiguous operator overload."),
+			> 1 => throw new Exception("Ambiguous operator overload reference."),
 			_   => null
 		};
 	}
@@ -203,6 +203,9 @@ public abstract class TypeSymbol : Symbol
 				if (parameters[0].Type != operandType)
 					continue;
 
+				if (unaryOperator.IsPostfix != parameters[0].IsReference)
+					continue;
+
 				validOverloads.Add(overload);
 			}
 		}
@@ -210,7 +213,89 @@ public abstract class TypeSymbol : Symbol
 		return validOverloads.Count switch
 		{
 			1   => validOverloads[0],
-			> 1 => throw new Exception("Ambiguous operator overload."),
+			> 1 => throw new Exception("Ambiguous operator overload reference."),
+			_   => null
+		};
+	}
+
+	public IndexerSymbol? FindIndexer(ResolvedType? keyType)
+	{
+		if (keyType is null)
+			return null;
+		
+		var validOverloads = new List<IndexerSymbol>();
+		foreach (var member in members.Values)
+		{
+			if (member is not IndexerSymbol indexer)
+				continue;
+
+			var overloadList = new List<IndexerSymbol> { indexer };
+			overloadList.AddRange(indexer.GetOverloads());
+
+			foreach (var overload in overloadList)
+			{
+				var parameters = overload.GetParameters().ToArray();
+				if (parameters.Length != 1)
+					continue;
+
+				if (parameters[0].Type != keyType)
+					continue;
+
+				validOverloads.Add(overload);
+			}
+		}
+
+		return validOverloads.Count switch
+		{
+			1   => validOverloads[0],
+			> 1 => throw new Exception("Ambiguous indexer reference."),
+			_   => null
+		};
+	}
+
+	public MethodSymbol? FindMethod(List<ResolvedType?> argumentTypes, List<TypeSymbol> templateArguments)
+	{
+		var validOverloads = new List<MethodSymbol>();
+		foreach (var member in members.Values)
+		{
+			if (member is not MethodSymbol method)
+				continue;
+
+			var overloadList = new List<MethodSymbol> { method };
+			overloadList.AddRange(method.GetOverloads());
+
+			foreach (var overload in overloadList)
+			{
+				var parameters = overload.GetParameters().ToArray();
+				if (parameters.Length != argumentTypes.Count)
+					continue;
+				
+				var typeParameters = overload.GetTemplateParameters().ToArray();
+				if (typeParameters.Length != templateArguments.Count)
+					continue;
+
+				var matches = true;
+				for (var i = 0; i < parameters.Length; i++)
+				{
+					var parameter = parameters[i];
+					if (parameter.Type == argumentTypes[i])
+						continue;
+					
+					matches = false;
+					break;
+				}
+
+				if (!matches)
+					continue;
+
+				validOverloads.Add(overload);
+			}
+		}
+
+		return validOverloads.Count switch
+		{
+			1   => validOverloads[0],
+			> 1 => throw new Exception("Ambiguous method reference."),
 			_   => null
 		};
 	}
@@ -238,4 +323,5 @@ public sealed class NativeTypeSymbol : TypeSymbol
 	public static readonly NativeTypeSymbol String = new("string");
 	public static readonly NativeTypeSymbol Range = new("range");
 	public static readonly NativeTypeSymbol Method = new("method");
+	public static readonly NativeTypeSymbol Event = new("event");
 }

@@ -1828,7 +1828,7 @@ public sealed class Parser
 
 	private Expression ParsePrimaryExpression()
 	{
-		if (Match(out var constantToken, SyntaxTokenType.IntegerConstant, SyntaxTokenType.RealConstant,
+		if (Match(out var constantToken, SyntaxTokenType.Int64Constant, SyntaxTokenType.DoubleConstant,
 				SyntaxTokenType.StringConstant, SyntaxTokenType.True, SyntaxTokenType.False, SyntaxTokenType.Null))
 		{
 			return new Expression.Literal(constantToken);

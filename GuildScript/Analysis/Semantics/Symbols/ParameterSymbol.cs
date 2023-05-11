@@ -1,8 +1,6 @@
-using GuildScript.Analysis.Syntax;
-
 namespace GuildScript.Analysis.Semantics.Symbols;
 
-public sealed class ParameterSymbol : LocalSymbol
+public sealed class ParameterSymbol : LocalSymbol, ITypedSymbol
 {
 	public ResolvedType? Type { get; set; }
 	public bool IsReference { get; }

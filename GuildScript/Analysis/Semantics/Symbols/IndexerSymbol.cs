@@ -38,4 +38,9 @@ public sealed class IndexerSymbol : MemberSymbol
 	{
 		return parameters.Values;
 	}
+
+	public IEnumerable<IndexerSymbol> GetOverloads()
+	{
+		return overloads;
+	}
 }

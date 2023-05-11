@@ -1,8 +1,9 @@
 namespace GuildScript.Analysis.Semantics.Symbols;
 
-public sealed class ExternalMethodSymbol : MemberSymbol
+public sealed class ExternalMethodSymbol : MemberSymbol, ITypedSymbol
 {
-	public ResolvedType? ReturnType { get; set; } = null;
+	public ResolvedType Type => SimpleResolvedType.Method;
+	public ResolvedType? ReturnType { get; set; }
 	
 	private readonly Dictionary<string, ParameterSymbol> parameters = new();
 	private readonly List<ExternalMethodSymbol> overloads = new();
@@ -36,5 +37,10 @@ public sealed class ExternalMethodSymbol : MemberSymbol
 	public IEnumerable<ParameterSymbol> GetParameters()
 	{
 		return parameters.Values;
+	}
+
+	public IEnumerable<ExternalMethodSymbol> GetOverloads()
+	{
+		return overloads;
 	}
 }

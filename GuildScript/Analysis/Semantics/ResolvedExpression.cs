@@ -236,11 +236,11 @@ public abstract class ResolvedExpression : ResolvedNode
 	{
 		public override ResolvedType? Type => Function.ReturnType;
 		public MethodSymbol Function { get; }
-		public ImmutableArray<ResolvedExpression> TemplateArguments { get; }
+		public ImmutableArray<TypeSymbol> TemplateArguments { get; }
 		public ImmutableArray<ResolvedExpression> Arguments { get; }
 
-		public Call(MethodSymbol function, IEnumerable<ResolvedExpression> templateArguments,
-			IEnumerable<ResolvedExpression> arguments)
+		public Call(MethodSymbol function, IEnumerable<TypeSymbol> templateArguments,
+					IEnumerable<ResolvedExpression> arguments)
 		{
 			Function = function;
 			TemplateArguments = templateArguments.ToImmutableArray();
@@ -319,13 +319,13 @@ public abstract class ResolvedExpression : ResolvedNode
 	public sealed class Index : ResolvedExpression
 	{
 		public override ResolvedType Type { get; }
-		public Symbol Symbol { get; }
+		public IndexerSymbol? IndexerSymbol { get; }
 		public ResolvedExpression Key { get; }
 		public bool IsConditional { get; }
 
-		public Index(Symbol symbol, ResolvedExpression key, bool isConditional, ResolvedType type)
+		public Index(IndexerSymbol? indexerSymbol, ResolvedExpression key, bool isConditional, ResolvedType type)
 		{
-			Symbol = symbol;
+			IndexerSymbol = indexerSymbol;
 			Key = key;
 			IsConditional = isConditional;
 			Type = type;

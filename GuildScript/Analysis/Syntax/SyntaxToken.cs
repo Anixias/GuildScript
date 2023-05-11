@@ -75,8 +75,16 @@ public enum SyntaxTokenType
 	QuestionOpenSquare,
 
 	// Constants
-	RealConstant,
-	IntegerConstant,
+	SingleConstant,
+	DoubleConstant,
+	Int8Constant,
+	Int16Constant,
+	Int32Constant,
+	Int64Constant,
+	UInt8Constant,
+	UInt16Constant,
+	UInt32Constant,
+	UInt64Constant,
 	StringConstant,
 	CharacterConstant,
 	True,

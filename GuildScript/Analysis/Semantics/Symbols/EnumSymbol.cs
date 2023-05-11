@@ -6,9 +6,25 @@ public sealed class EnumSymbol : TypeSymbol
 {
 	public bool Resolved { get; set; }
 	public TypeSyntax BaseTypeSyntax { get; }
-	public ResolvedType? BaseType { get; set; }
+
+	public ResolvedType? BaseType
+	{
+		get => baseType;
+		set
+		{
+			baseType = value;
+
+			foreach (var member in enumMembers)
+			{
+				member.Type = value;
+				member.Resolved = true;
+			}
+		}
+	}
+
 	private readonly List<EnumMemberSymbol> enumMembers = new();
-	
+	private ResolvedType? baseType;
+
 	public EnumSymbol(string name, Declaration declaration, AccessModifier accessModifier, TypeSyntax baseType)
 		: base(name, declaration, accessModifier)
 	{
@@ -20,7 +36,7 @@ public sealed class EnumSymbol : TypeSymbol
 		if (Declaration is null)
 			return null;
 		
-		var member = new EnumMemberSymbol(name, Declaration);
+		var member = new EnumMemberSymbol(name, Declaration, this);
 		if (!AddChild(member))
 			return null;
 		

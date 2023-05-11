@@ -119,9 +119,11 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 			semanticModel.VisitSymbol(symbol);
 			semanticModel.EnterScope(statement);
 
-			symbol.TemplateParameters = statement.TypeParameters.Select(templateParameter =>
-				semanticModel.AddTemplateParameter(templateParameter.Text,
-					new Declaration(templateParameter, statement))).ToImmutableArray();
+			foreach (var parameter in statement.TypeParameters)
+			{
+				var parameterDeclaration = new Declaration(parameter, statement);
+				semanticModel.AddSymbol(symbol.AddTemplateParameter(parameter.Text, parameterDeclaration));
+			}
 
 			foreach (var member in statement.Members)
 			{
@@ -162,9 +164,11 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 			semanticModel.VisitSymbol(symbol);
 			semanticModel.EnterScope(statement);
 
-			symbol.TemplateParameters = statement.TypeParameters.Select(templateParameter =>
-				semanticModel.AddTemplateParameter(templateParameter.Text,
-					new Declaration(templateParameter, statement))).ToImmutableArray();
+			foreach (var parameter in statement.TypeParameters)
+			{
+				var parameterDeclaration = new Declaration(parameter, statement);
+				semanticModel.AddSymbol(symbol.AddTemplateParameter(parameter.Text, parameterDeclaration));
+			}
 
 			foreach (var member in statement.Members)
 			{
@@ -192,9 +196,11 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 			semanticModel.VisitSymbol(symbol);
 			semanticModel.EnterScope(statement);
 
-			symbol.TemplateParameters = statement.TypeParameters.Select(templateParameter =>
-				semanticModel.AddTemplateParameter(templateParameter.Text,
-					new Declaration(templateParameter, statement))).ToImmutableArray();
+			foreach (var parameter in statement.TypeParameters)
+			{
+				var parameterDeclaration = new Declaration(parameter, statement);
+				semanticModel.AddSymbol(symbol.AddTemplateParameter(parameter.Text, parameterDeclaration));
+			}
 
 			foreach (var member in statement.Members)
 			{
@@ -465,10 +471,12 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 				semanticModel.AddSymbol(methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
 					parameter.IsReference));
 			}
-
-			methodSymbol.TemplateParameters = statement.TypeParameters.Select(templateParameter =>
-				semanticModel.AddTemplateParameter(templateParameter.Text,
-					new Declaration(templateParameter, statement))).ToImmutableArray();
+			
+			foreach (var parameter in statement.TypeParameters)
+			{
+				var parameterDeclaration = new Declaration(parameter, statement);
+				semanticModel.AddSymbol(methodSymbol.AddTemplateParameter(parameter.Text, parameterDeclaration));
+			}
 
 			statement.Body.AcceptVisitor(this);
 
@@ -687,7 +695,7 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 
 	public void VisitExpressionStatement(Statement.ExpressionStatement statement)
 	{
-
+		statement.Expression.AcceptVisitor(this);
 	}
 
 	public void VisitOperatorOverloadStatement(Statement.OperatorOverload statement)

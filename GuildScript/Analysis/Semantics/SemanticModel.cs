@@ -24,7 +24,7 @@ public sealed class SemanticModel
 
 	private readonly List<Symbol> symbols = new();
 	private List<MethodSymbol> EntryPoints { get; } = new();
-	private Symbol? CurrentSymbol => symbolStack.TryPeek(out var symbol) ? symbol : null;
+	public Symbol? CurrentSymbol => symbolStack.TryPeek(out var symbol) ? symbol : null;
 	private Scope? CurrentScope => scopeStack.TryPeek(out var scope) ? scope : null;
 	private readonly Stack<Symbol> symbolStack = new();
 	private readonly Stack<Scope> scopeStack = new();
@@ -398,6 +398,7 @@ public sealed class SemanticModel
 	public void AddSymbol(Symbol symbol)
 	{
 		symbols.Add(symbol);
+		CurrentScope?.AddSymbol(symbol);
 	}
 
 	public LambdaSymbol AddLambda(Declaration declaration)
@@ -412,14 +413,6 @@ public sealed class SemanticModel
 	public LambdaSymbol? GetLambda(SyntaxNode node)
 	{
 		return lambdaSymbols.TryGetValue(node, out var lambda) ? lambda : null;
-	}
-
-	public TemplateParameterSymbol AddTemplateParameter(string name, Declaration declaration)
-	{
-		var symbol = new TemplateParameterSymbol(name, declaration);
-		symbols.Add(symbol);
-		CurrentScope?.AddSymbol(symbol);
-		return symbol;
 	}
 
 	public IndexerSymbol AddIndexer(string name, Declaration declaration, AccessModifier accessModifier)
