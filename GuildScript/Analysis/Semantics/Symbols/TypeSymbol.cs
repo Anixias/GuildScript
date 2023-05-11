@@ -181,17 +181,23 @@ public abstract class TypeSymbol : Symbol
 			if (!method.IsOperator)
 				continue;
 
-			var parameters = method.GetParameters().ToArray();
-			if (parameters.Length != 1)
-				continue;
-
-			if (parameters[0].Type != operandType)
-				continue;
-
 			if (method.Operator!.Equals(unaryOperator))
 				continue;
 
-			return method;
+			var overloadList = new List<MethodSymbol> { method };
+			overloadList.AddRange(method.GetOverloads());
+
+			foreach (var overload in overloadList)
+			{
+				var parameters = overload.GetParameters().ToArray();
+				if (parameters.Length != 1)
+					continue;
+
+				if (parameters[0].Type != operandType)
+					continue;
+
+				return overload;
+			}
 		}
 
 		return null;
