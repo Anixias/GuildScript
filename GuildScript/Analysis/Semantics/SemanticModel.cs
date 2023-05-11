@@ -19,7 +19,7 @@ public sealed class SemanticModel
 			this.scope = scope;
 		}
 	}
-	
+
 	public IEnumerable<TypeSymbol> TypeSymbols => typeSymbols;
 
 	private readonly List<Symbol> symbols = new();
@@ -32,6 +32,7 @@ public sealed class SemanticModel
 	private readonly Dictionary<SyntaxNode, Scope> scopes = new();
 	private readonly List<TypeSymbol> typeSymbols = new();
 	private readonly List<LambdaTypeData> lambdaTypeQueue = new();
+	private readonly Dictionary<SyntaxNode, LambdaSymbol> lambdaSymbols = new();
 
 	public SemanticModel()
 	{
@@ -45,7 +46,7 @@ public sealed class SemanticModel
 			scopeStack.Push(existingScope);
 			return existingScope;
 		}
-    
+
 		var scope = new Scope(CurrentScope);
 		scopes.Add(node, scope);
 		scopeStack.Push(scope);
@@ -63,7 +64,7 @@ public sealed class SemanticModel
 		{
 			var data = lambdaTypeQueue[0];
 			lambdaTypeQueue.RemoveAt(0);
-			
+
 			// @TODO
 		}
 	}
@@ -74,7 +75,7 @@ public sealed class SemanticModel
 			return moduleSymbol.ContainsModule(name)
 				? moduleSymbol.GetModule(name)
 				: moduleSymbol.CreateModule(name);
-		
+
 		if (globalModules.TryGetValue(name, out var existingModule))
 			return existingModule;
 
@@ -91,7 +92,7 @@ public sealed class SemanticModel
 			return moduleSymbol.ContainsModule(name)
 				? moduleSymbol.GetModule(name)
 				: moduleSymbol.CreateModule(name);
-		
+
 		return globalModules.TryGetValue(name, out var existingModule) ? existingModule : null;
 	}
 
@@ -237,7 +238,7 @@ public sealed class SemanticModel
 		{
 			Operator = @operator
 		};
-		
+
 		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
@@ -399,12 +400,25 @@ public sealed class SemanticModel
 		symbols.Add(symbol);
 	}
 
+	public LambdaSymbol AddLambda(Declaration declaration)
+	{
+		var symbol = new LambdaSymbol("Lambda:" + Guid.NewGuid(), declaration);
+		symbols.Add(symbol);
+		CurrentScope?.AddSymbol(symbol);
+		lambdaSymbols.Add(declaration.SourceNode, symbol);
+		return symbol;
+	}
+
+	public LambdaSymbol? GetLambda(SyntaxNode node)
+	{
+		return lambdaSymbols.TryGetValue(node, out var lambda) ? lambda : null;
+	}
+
 	public TemplateParameterSymbol AddTemplateParameter(string name, Declaration declaration)
 	{
 		var symbol = new TemplateParameterSymbol(name, declaration);
-		
-		CurrentScope?.AddSymbol(symbol);
 		symbols.Add(symbol);
+		CurrentScope?.AddSymbol(symbol);
 		return symbol;
 	}
 

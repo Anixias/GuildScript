@@ -75,7 +75,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 	{
 		if (type is null)
 			return null;
-		
+
 		switch (type)
 		{
 			case SimpleResolvedType { TypeSymbol: DefineSymbol defineSymbol }:
@@ -123,19 +123,19 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 				var symbol = semanticModel.FindSymbol(namedTypeSyntax.Name);
 				if (symbol is TypeSymbol typeSymbol)
 					return new SimpleResolvedType(typeSymbol);
-				
+
 				throw new Exception($"The type '{namedTypeSyntax.Name}' does not exist in this context.");
 			case ArrayTypeSyntax arrayTypeSyntax:
 				var elementType = ResolveType(arrayTypeSyntax.BaseType);
 				if (elementType is not null)
 					return new ArrayResolvedType(elementType);
-				
+
 				throw new Exception($"The type '{arrayTypeSyntax.BaseType}' does not exist in this context.");
 			case NullableTypeSyntax nullableTypeSyntax:
 				var nullableBaseType = ResolveType(nullableTypeSyntax.BaseType);
 				if (nullableBaseType is not null)
 					return new NullableResolvedType(nullableBaseType);
-				
+
 				throw new Exception($"The type '{nullableTypeSyntax.BaseType}' does not exist in this context.");
 			case TemplatedTypeSyntax templatedTypeSyntax:
 				var templatedBaseType = ResolveType(templatedTypeSyntax.BaseType);
@@ -148,7 +148,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 					var resolvedTemplateArgument = ResolveType(templateArgument);
 					if (resolvedTemplateArgument is not null)
 						templateArguments.Add(resolvedTemplateArgument);
-					
+
 					throw new Exception($"The type '{templateArgument}' does not exist in this context.");
 				}
 
@@ -157,7 +157,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		return null;
 	}
-	
+
 	private TypeSymbol? ResolveExpressionTypeSymbol(Expression expression)
 	{
 		switch (expression)
@@ -167,7 +167,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 				var symbol = semanticModel.FindSymbol(qualifier.NameToken.Text);
 				if (symbol is TypeSymbol typeSymbol)
 					return typeSymbol;
-				
+
 				throw new Exception($"The type '{qualifier.NameToken.Text}' does not exist in this context.");
 			}
 			case Expression.Identifier identifier:
@@ -175,7 +175,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 				var symbol = semanticModel.FindSymbol(identifier.NameToken.Text);
 				if (symbol is TypeSymbol typeSymbol)
 					return typeSymbol;
-				
+
 				throw new Exception($"The type '{identifier.NameToken.Text}' does not exist in this context.");
 			}
 			case Expression.Binary binary:
@@ -198,7 +198,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		return null;
 	}
-	
+
 	private MemberSymbol? ResolveExpressionMemberSymbol(Expression expression)
 	{
 		switch (expression)
@@ -208,7 +208,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 				var symbol = semanticModel.FindSymbol(qualifier.NameToken.Text);
 				if (symbol is MemberSymbol memberSymbol)
 					return memberSymbol;
-				
+
 				throw new Exception($"The member '{qualifier.NameToken.Text}' does not exist in this context.");
 			}
 			case Expression.Identifier identifier:
@@ -216,7 +216,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 				var symbol = semanticModel.FindSymbol(identifier.NameToken.Text);
 				if (symbol is MemberSymbol memberSymbol)
 					return memberSymbol;
-				
+
 				throw new Exception($"The member '{identifier.NameToken.Text}' does not exist in this context.");
 			}
 			case Expression.Binary binary:
@@ -234,6 +234,31 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 				semanticModel.Return();
 
 				return right;
+			}
+		}
+
+		return null;
+	}
+
+	private LocalSymbol? ResolveExpressionLocalSymbol(Expression expression)
+	{
+		switch (expression)
+		{
+			case Expression.Qualifier qualifier:
+			{
+				var symbol = semanticModel.FindSymbol(qualifier.NameToken.Text);
+				if (symbol is LocalSymbol localSymbol)
+					return localSymbol;
+
+				throw new Exception($"The local variable '{qualifier.NameToken.Text}' does not exist in this context.");
+			}
+			case Expression.Identifier identifier:
+			{
+				var symbol = semanticModel.FindSymbol(identifier.NameToken.Text);
+				if (symbol is LocalSymbol localSymbol)
+					return localSymbol;
+
+				throw new Exception($"The local variable '{identifier.NameToken.Text}' does not exist in this context.");
 			}
 		}
 
@@ -262,7 +287,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		{
 			throw new Exception("Program requires module definition.");
 		}
-		
+
 		semanticModel.EnterScope(statement);
 		var statements = statement.Statements.Select(topLevelStatement => topLevelStatement.AcceptVisitor(this));
 		semanticModel.ExitScope();
@@ -289,10 +314,10 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			var parameterType = ResolveType(parameter.Type);
 			if (parameterType is null)
 				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
-			
+
 			entryPointSymbol.ResolveParameter(parameter.Name.Text, parameterType);
 		}
-		
+
 		var body = statement.Body.AcceptVisitor(this);
 		semanticModel.ExitScope();
 		semanticModel.Return();
@@ -310,13 +335,13 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		if (statement.Type is null)
 			throw new Exception("Definition must supply a type.");
-		
+
 		defineSymbol.AliasedType = ResolveType(statement.Type);
 		defineSymbol.Resolved = true;
 
 		if (defineSymbol.AliasedType is null)
 			throw new Exception($"Failed to resolve type for definition '{defineSymbol.Name}'.");
-		
+
 		return new ResolvedStatement.Define(defineSymbol.Name, defineSymbol.AliasedType);
 	}
 
@@ -331,7 +356,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
 		if (symbol is not ClassSymbol classSymbol)
 			throw new Exception($"Failed to find class symbol '{statement.NameToken.Text}'.");
-		
+
 		semanticModel.VisitSymbol(classSymbol);
 		semanticModel.EnterScope(statement);
 
@@ -348,12 +373,12 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
 		if (symbol is not StructSymbol structSymbol)
 			throw new Exception($"Failed to find struct symbol '{statement.NameToken.Text}'.");
-		
+
 		semanticModel.VisitSymbol(structSymbol);
 		semanticModel.EnterScope(statement);
 
 		var members = statement.Members.Select(member => member.AcceptVisitor(this));
-		
+
 		semanticModel.ExitScope();
 		semanticModel.Return();
 
@@ -366,12 +391,12 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
 		if (symbol is not InterfaceSymbol interfaceSymbol)
 			throw new Exception($"Failed to find interface symbol '{statement.NameToken.Text}'.");
-		
+
 		semanticModel.VisitSymbol(interfaceSymbol);
 		semanticModel.EnterScope(statement);
 
 		var members = statement.Members.Select(member => member.AcceptVisitor(this));
-		
+
 		semanticModel.ExitScope();
 		semanticModel.Return();
 
@@ -403,7 +428,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var symbol = semanticModel.FindSymbol("destructor");
 		if (symbol is not DestructorSymbol destructorSymbol)
 			throw new Exception("Failed to find destructor symbol.");
-		
+
 		semanticModel.VisitSymbol(destructorSymbol);
 		semanticModel.EnterScope(statement);
 
@@ -411,7 +436,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		semanticModel.ExitScope();
 		semanticModel.Return();
-		
+
 		destructorSymbol.Resolved = true;
 		return new ResolvedStatement.Destructor(body, destructorSymbol);
 	}
@@ -421,25 +446,25 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var symbol = semanticModel.FindSymbol(statement.Identifier.Text);
 		if (symbol is not ExternalMethodSymbol externalMethodSymbol)
 			throw new Exception($"Failed to find external method symbol '{statement.Identifier.Text}'.");
-		
+
 		semanticModel.VisitSymbol(externalMethodSymbol);
 		semanticModel.EnterScope(statement);
 
 		if (statement.ReturnType is not null)
 			externalMethodSymbol.ReturnType = ResolveType(statement.ReturnType);
-		
+
 		foreach (var parameter in statement.ParameterList)
 		{
 			var parameterType = ResolveType(parameter.Type);
 			if (parameterType is null)
 				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
-			
+
 			externalMethodSymbol.ResolveParameter(parameter.Name.Text, parameterType);
 		}
 
 		semanticModel.ExitScope();
 		semanticModel.Return();
-		
+
 		externalMethodSymbol.Resolved = true;
 		return new ResolvedStatement.ExternalMethod(externalMethodSymbol.ReturnType, externalMethodSymbol,
 			externalMethodSymbol.GetParameters());
@@ -450,7 +475,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var symbol = semanticModel.FindSymbol("constructor");
 		if (symbol is not ConstructorSymbol constructorSymbol)
 			throw new Exception("Failed to find constructor.");
-		
+
 		// Handle overloads
 		if (constructorSymbol.Declaration.SourceNode != statement)
 		{
@@ -474,16 +499,16 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			var parameterType = ResolveType(parameter.Type);
 			if (parameterType is null)
 				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
-			
+
 			constructorSymbol.ResolveParameter(parameter.Name.Text, parameterType);
 		}
-		
+
 		var body = statement.Body.AcceptVisitor(this);
 		semanticModel.ExitScope();
 		semanticModel.Return();
 
 		// @TODO Resolve initializer and arguments
-		
+
 		constructorSymbol.Resolved = true;
 		return new ResolvedStatement.Constructor(constructorSymbol.AccessModifier, constructorSymbol,
 			constructorSymbol.GetParameters(), body, null, Array.Empty<ResolvedExpression>());
@@ -507,7 +532,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			var parameterType = ResolveType(parameter.Type);
 			if (parameterType is null)
 				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
-			
+
 			indexerSymbol.ResolveParameter(parameter.Name.Text, parameterType);
 		}
 
@@ -539,7 +564,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 	public ResolvedStatement VisitAccessorTokenStatement(Statement.AccessorToken statement)
 	{
 		var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Public);
-		
+
 		var autoType = statement.Token.Type switch
 		{
 			SyntaxTokenType.Get => AccessorAutoType.Get,
@@ -556,7 +581,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		if (statement.LambdaExpression.AcceptVisitor(this) is not ResolvedExpression.Lambda lambda)
 			throw new Exception("Invalid lambda expression.");
-		
+
 		return new ResolvedStatement.AccessorLambda(accessModifier, lambda);
 	}
 
@@ -569,7 +594,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		{
 			if (ResolveType(parameter) is not { } resolvedType)
 				continue;
-			
+
 			parameters.Add(resolvedType);
 		}
 
@@ -578,7 +603,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			: ResolveType(statement.LambdaSignature.OutputType);
 
 		var symbol = new LambdaTypeSymbol(parameters, returnType);
-		
+
 		return new ResolvedStatement.AccessorLambdaSignature(accessModifier, symbol);
 	}
 
@@ -587,22 +612,22 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
 		if (symbol is not EventSymbol eventSymbol)
 			throw new Exception($"Failed to find event symbol '{statement.NameToken.Text}'.");
-		
+
 		semanticModel.VisitSymbol(eventSymbol);
 		semanticModel.EnterScope(statement);
-		
+
 		foreach (var parameter in statement.ParameterList)
 		{
 			var parameterType = ResolveType(parameter.Type);
 			if (parameterType is null)
 				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
-			
+
 			eventSymbol.ResolveParameter(parameter.Name.Text, parameterType);
 		}
 
 		semanticModel.ExitScope();
 		semanticModel.Return();
-		
+
 		eventSymbol.Resolved = true;
 		return new ResolvedStatement.Event(eventSymbol.AccessModifier, eventSymbol.EventModifier, eventSymbol,
 			eventSymbol.GetParameters());
@@ -613,22 +638,22 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
 		if (symbol is not EventSymbol eventSymbol)
 			throw new Exception($"Failed to find event symbol '{statement.NameToken.Text}'.");
-		
+
 		semanticModel.VisitSymbol(eventSymbol);
 		semanticModel.EnterScope(statement);
-		
+
 		foreach (var parameter in statement.ParameterList)
 		{
 			var parameterType = ResolveType(parameter.Type);
 			if (parameterType is null)
 				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
-			
+
 			eventSymbol.ResolveParameter(parameter.Name.Text, parameterType);
 		}
 
 		semanticModel.ExitScope();
 		semanticModel.Return();
-		
+
 		eventSymbol.Resolved = true;
 		return new ResolvedStatement.EventSignature(eventSymbol.EventModifier, eventSymbol,
 			eventSymbol.GetParameters());
@@ -645,7 +670,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		if (type is null)
 			throw new Exception($"Failed to resolve type of property '{statement.NameToken.Text}'.");
 
-		
+
 		semanticModel.VisitSymbol(propertySymbol);
 		semanticModel.EnterScope(statement);
 
@@ -670,7 +695,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		if (type is null)
 			throw new Exception($"Failed to resolve type of property '{statement.NameToken.Text}'.");
 
-		
+
 		semanticModel.VisitSymbol(propertySymbol);
 		semanticModel.EnterScope(statement);
 
@@ -691,16 +716,16 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 
 		var returnType = statement.ReturnType is null ? null : ResolveType(statement.ReturnType);
-		
+
 		semanticModel.VisitSymbol(methodSymbol);
 		semanticModel.EnterScope(statement);
-		
+
 		foreach (var parameter in statement.ParameterList)
 		{
 			var parameterType = ResolveType(parameter.Type);
 			if (parameterType is null)
 				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
-			
+
 			methodSymbol.ResolveParameter(parameter.Name.Text, parameterType);
 		}
 
@@ -723,16 +748,16 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 
 		var returnType = statement.ReturnType is null ? null : ResolveType(statement.ReturnType);
-		
+
 		semanticModel.VisitSymbol(methodSymbol);
 		semanticModel.EnterScope(statement);
-		
+
 		foreach (var parameter in statement.ParameterList)
 		{
 			var parameterType = ResolveType(parameter.Type);
 			if (parameterType is null)
 				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
-			
+
 			methodSymbol.ResolveParameter(parameter.Name.Text, parameterType);
 		}
 
@@ -752,13 +777,13 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		if (statement.Type is null)
 			throw new Exception("Fields require explicit types.");
-		
+
 		fieldSymbol.Type = ResolveType(statement.Type);
 		if (fieldSymbol.Type is null)
 			throw new Exception($"Failed to resolve type of field '{statement.NameToken.Text}'.");
 
 		var initializer = statement.Initializer?.AcceptVisitor(this);
-		
+
 		fieldSymbol.Resolved = true;
 
 		return new ResolvedStatement.Field(fieldSymbol.AccessModifier, fieldSymbol.Modifiers, fieldSymbol.Type,
@@ -784,7 +809,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var elseStatement = statement.ElseStatement?.AcceptVisitor(this);
 
 		semanticModel.ExitScope();
-		
+
 		return new ResolvedStatement.Control(ifExpression, ifStatement, elseStatement);
 	}
 
@@ -794,7 +819,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		var condition = statement.Condition.AcceptVisitor(this);
 		var body = statement.Body.AcceptVisitor(this);
-		
+
 		semanticModel.ExitScope();
 
 		return new ResolvedStatement.While(condition, body);
@@ -806,9 +831,9 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		var body = statement.Body.AcceptVisitor(this);
 		var condition = statement.Condition.AcceptVisitor(this);
-		
+
 		semanticModel.ExitScope();
-		
+
 		return new ResolvedStatement.DoWhile(body, condition);
 	}
 
@@ -820,16 +845,16 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var condition = statement.Condition?.AcceptVisitor(this);
 		var increment = statement.Increment?.AcceptVisitor(this);
 		var body = statement.Body.AcceptVisitor(this);
-		
+
 		semanticModel.ExitScope();
-		
+
 		return new ResolvedStatement.For(initializer, condition, increment, body);
 	}
 
 	public ResolvedStatement VisitForEachStatement(Statement.ForEach statement)
 	{
 		semanticModel.EnterScope(statement);
-		
+
 		var symbol = semanticModel.FindSymbol(statement.Iterator.Text);
 		if (symbol is not LocalVariableSymbol iteratorSymbol)
 			throw new Exception($"Failed to resolve iterator '{statement.Iterator.Text}'.");
@@ -839,9 +864,9 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		iteratorSymbol.Resolved = true;
 		var enumerable = statement.Enumerable.AcceptVisitor(this);
 		var body = statement.Body.AcceptVisitor(this);
-		
+
 		semanticModel.ExitScope();
-		
+
 		return new ResolvedStatement.ForEach(iteratorSymbol, enumerable, body);
 	}
 
@@ -851,7 +876,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		var repetitions = statement.Repetitions.AcceptVisitor(this);
 		var body = statement.Body.AcceptVisitor(this);
-		
+
 		semanticModel.ExitScope();
 
 		return new ResolvedStatement.Repeat(repetitions, body);
@@ -874,14 +899,14 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var symbol = semanticModel.FindSymbol(statement.Identifier.Text);
 		if (symbol is null)
 			throw new Exception($"Failed to resolve symbol '{statement.Identifier.Text}'.");
-		
+
 		return new ResolvedStatement.Seal(symbol);
 	}
 
 	public ResolvedStatement VisitTryStatement(Statement.Try statement)
 	{
 		semanticModel.EnterScope(statement);
-		
+
 		var tryStatement = statement.TryStatement.AcceptVisitor(this);
 		LocalVariableSymbol? catchVariableSymbol = null;
 
@@ -897,9 +922,9 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		var catchStatement = statement.CatchStatement?.AcceptVisitor(this);
 		var finallyStatement = statement.FinallyStatement?.AcceptVisitor(this);
-		
+
 		semanticModel.ExitScope();
-		
+
 		return new ResolvedStatement.Try(tryStatement, catchVariableSymbol, catchStatement, finallyStatement);
 	}
 
@@ -910,10 +935,19 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			throw new Exception($"Failed to resolved local variable '{statement.Identifier.Text}'.");
 
 		var type = statement.Type is null ? null : ResolveType(statement.Type);
-		localVariableSymbol.Type = type;
-		
 		var initializer = statement.Initializer?.AcceptVisitor(this);
-		
+
+		if (type is null)
+		{
+			if (initializer is null)
+				throw new Exception($"Cannot infer type for variable '{statement.Identifier.Text}'.");
+
+			type = initializer.Type;
+		}
+
+		localVariableSymbol.Type = type;
+		localVariableSymbol.Resolved = true;
+
 		return new ResolvedStatement.VariableDeclaration(localVariableSymbol, initializer);
 	}
 
@@ -924,11 +958,11 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var symbol = ResolveExpressionMemberSymbol(statement.Expression);
 		if (symbol is not FieldSymbol fieldSymbol)
 			throw new Exception("Invalid lock target.");
-		
+
 		var body = statement.Body.AcceptVisitor(this);
-		
+
 		semanticModel.ExitScope();
-		
+
 		return new ResolvedStatement.Lock(fieldSymbol, body);
 	}
 
@@ -954,7 +988,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 							var type = ResolveType(patternLabel.Type);
 							if (type is null)
 								throw new Exception($"Failed to resolve type '{patternLabel.Type}'.");
-							
+
 							labels.Add(new ResolvedStatement.Switch.TypeMatchLabel(type));
 						}
 						else
@@ -966,7 +1000,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 							localVariableSymbol.Type = ResolveType(patternLabel.Type);
 							localVariableSymbol.Resolved = true;
-							
+
 							labels.Add(new ResolvedStatement.Switch.PatternLabel(localVariableSymbol));
 						}
 
@@ -980,9 +1014,9 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			semanticModel.ExitScope();
 			sections.Add(new ResolvedStatement.Switch.Section(labels, body));
 		}
-		
+
 		semanticModel.ExitScope();
-		
+
 		return new ResolvedStatement.Switch(switchExpression, sections);
 	}
 
@@ -1005,7 +1039,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var returnType = ResolveType(statement.ReturnType);
 		if (returnType is null)
 			throw new Exception($"Failed to resolve return type '{statement.ReturnType}'.");
-		
+
 		var parameters = new List<string>();
 		foreach (var parameter in statement.ParameterList)
 		{
@@ -1018,7 +1052,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var symbol = semanticModel.FindSymbol(name);
 		if (symbol is not MethodSymbol methodSymbol)
 			throw new Exception("Failed to resolve operator overload.");
-		
+
 		semanticModel.EnterScope(statement);
 		foreach (var parameter in statement.ParameterList)
 		{
@@ -1029,10 +1063,10 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			var parameterType = ResolveType(parameter.Type);
 			if (parameterType is null)
 				throw new Exception($"Failed to resolve type '{parameter.Type}'.");
-			
+
 			methodSymbol.ResolveParameter(parameter.Name.Text, parameterType);
 		}
-			
+
 		var body = statement.Body.AcceptVisitor(this);
 		semanticModel.ExitScope();
 
@@ -1040,7 +1074,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var operatorSymbol = ResolveOperator(statement.Operator.TokenSpan.ToString());
 		if (operatorSymbol is null)
 			throw new Exception($"Failed to resolve operator '{statement.Operator.TokenSpan}'.");
-		
+
 		return new ResolvedStatement.OperatorOverload(returnType, operatorSymbol, methodSymbol, body);
 	}
 
@@ -1048,7 +1082,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 	{var returnType = ResolveType(statement.ReturnType);
 		if (returnType is null)
 			throw new Exception($"Failed to resolve return type '{statement.ReturnType}'.");
-		
+
 		var parameters = new List<string>();
 		foreach (var parameter in statement.ParameterList)
 		{
@@ -1061,7 +1095,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var symbol = semanticModel.FindSymbol(name);
 		if (symbol is not MethodSymbol methodSymbol)
 			throw new Exception("Failed to resolve operator overload.");
-		
+
 		semanticModel.EnterScope(statement);
 		foreach (var parameter in statement.ParameterList)
 		{
@@ -1072,17 +1106,17 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			var parameterType = ResolveType(parameter.Type);
 			if (parameterType is null)
 				throw new Exception($"Failed to resolve type '{parameter.Type}'.");
-			
+
 			methodSymbol.ResolveParameter(parameter.Name.Text, parameterType);
 		}
-		
+
 		semanticModel.ExitScope();
 
 		methodSymbol.Resolved = true;
 		var operatorSymbol = ResolveOperator(statement.Operator.TokenSpan.ToString());
 		if (operatorSymbol is null)
 			throw new Exception($"Failed to resolve operator '{statement.Operator.TokenSpan}'.");
-		
+
 		return new ResolvedStatement.OperatorOverloadSignature(returnType, operatorSymbol, methodSymbol);
 	}
 
@@ -1108,50 +1142,41 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		if (left.Type is null || right.Type is null)
 			throw new Exception("Cannot operate on void types.");
 
-		ResolvedType? expressionType = null;
-		MethodSymbol? operatorMethod = null;
-		
-		if (left.Type.TypeSymbol is NativeTypeSymbol nativeLeftType &&
-			right.Type.TypeSymbol is NativeTypeSymbol nativeRightType)
+		var expressionType = expression.Operator.GetResultType(left.Type, right.Type);
+		if (expressionType is null)
 		{
-			var resultType = expression.Operator.GetResultType(left.Type, right.Type);
-			
-			if (resultType is null)
-				throw new Exception($"Cannot use operator '{expression.Operator}' on types " +
-									$"'{nativeLeftType.Name}' and '{nativeRightType.Name}'.");
-		}
-		else
-		{
-			// Search for operator overloading
+			// Look for operator overloads on either type
 			var leftOverload = left.Type.TypeSymbol.FindOperatorOverload(left.Type, expression.Operator, right.Type);
 			var rightOverload = right.Type.TypeSymbol.FindOperatorOverload(left.Type, expression.Operator, right.Type);
 
-			if (leftOverload is not null && rightOverload is not null)
-				throw new Exception("Ambiguous operator overload.");
-
 			if (leftOverload is not null)
 			{
+				if (rightOverload is not null)
+					throw new Exception("Ambiguous operator overload.");
+
 				expressionType = leftOverload.ReturnType;
-				operatorMethod = leftOverload;
 			}
 			else if (rightOverload is not null)
 			{
 				expressionType = rightOverload.ReturnType;
-				operatorMethod = rightOverload;
 			}
 		}
 
-		return new ResolvedExpression.Binary(left, expression.Operator, right, expressionType, operatorMethod);
+		if (expressionType is null)
+			throw new Exception(
+				$"Cannot use operator '{expression.Operator}' on types '{left.Type}' and '{right.Type}'.");
+
+		return new ResolvedExpression.Binary(left, expression.Operator, right, expressionType);
 	}
 
 	public ResolvedExpression VisitTypeRelationExpression(Expression.TypeRelation expression)
 	{
 		var operand = expression.Operand.AcceptVisitor(this);
 		var typeQuery = expression.Type is null ? null : ResolveType(expression.Type);
-		
+
 		if (expression.IdentifierToken is null)
 			return new ResolvedExpression.TypeRelation(operand, expression.Operator, typeQuery, null);
-		
+
 		var symbol = semanticModel.FindSymbol(expression.IdentifierToken.Text);
 		if (symbol is not LocalVariableSymbol localVariableSymbol)
 			throw new Exception($"Failed to resolve local variable '{expression.IdentifierToken.Text}'.");
@@ -1168,11 +1193,11 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		ResolvedType? expressionType = null;
 		MethodSymbol? operatorMethod = null;
-		
+
 		if (operand.Type.TypeSymbol is NativeTypeSymbol nativeType)
 		{
 			var resultType = expression.Operator.GetResultType(operand.Type);
-			
+
 			if (resultType is null)
 				throw new Exception($"Cannot use operator '{expression.Operator}' on type '{nativeType.Name}'.");
 		}
@@ -1202,12 +1227,24 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedExpression VisitIdentifierExpression(Expression.Identifier expression)
 	{
-		return new ResolvedExpression.Identifier();
+		var symbol = semanticModel.FindSymbol(expression.NameToken.Text);
+		if (symbol is null)
+			throw new Exception($"Failed to resolve identifier '{expression.NameToken.Text}'.");
+
+		// @TODO
+
+		return new ResolvedExpression.Identifier(, symbol);
 	}
 
 	public ResolvedExpression VisitQualifierExpression(Expression.Qualifier expression)
 	{
-		return new ResolvedExpression.Qualifier();
+		var symbol = semanticModel.FindSymbol(expression.NameToken.Text);
+		if (symbol is null)
+			throw new Exception($"Failed to resolve qualifier '{expression.NameToken.Text}'.");
+
+		// @TODO
+
+		return new ResolvedExpression.Qualifier(, symbol);
 	}
 
 	public ResolvedExpression VisitCallExpression(Expression.Call expression)
@@ -1227,7 +1264,12 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedExpression VisitCastExpression(Expression.Cast expression)
 	{
-		return new ResolvedExpression.Cast();
+		var resolvedExpression = expression.AcceptVisitor(this);
+		var resolvedType = ResolveType(expression.TargetType);
+		if (resolvedType is null)
+			throw new Exception($"Failed to resolve type '{expression.TargetType}'.");
+
+		return new ResolvedExpression.Cast(resolvedExpression, resolvedType, expression.IsConditional);
 	}
 
 	public ResolvedExpression VisitIndexExpression(Expression.Index expression)
@@ -1237,6 +1279,13 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedExpression VisitLambdaExpression(Expression.Lambda expression)
 	{
-		return new ResolvedExpression.Lambda();
+		var lambdaSymbol = semanticModel.GetLambda(expression);
+		if (lambdaSymbol is null)
+			throw new Exception("Failed to resolve lambda.");
+
+		var returnType = expression.ReturnType is null ? null : ResolveType(expression.ReturnType);
+		var body = expression.Body.AcceptVisitor(this);
+
+		return new ResolvedExpression.Lambda(lambdaSymbol, returnType, body);
 	}
 }

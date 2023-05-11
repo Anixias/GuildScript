@@ -1,36 +1,20 @@
-using System.Collections.Immutable;
-using GuildScript.Analysis.Syntax;
-
 namespace GuildScript.Analysis.Semantics.Symbols;
 
-public sealed class MethodSymbol : MemberSymbol
+public sealed class LambdaSymbol : LocalSymbol
 {
-	public ImmutableArray<MethodModifier> Modifiers { get; }
-	public ResolvedType? ReturnType { get; set; }
-	public bool IsOperator => Operator is not null;
-	public Operator? Operator { get; set; }
-
 	private readonly List<ParameterSymbol> parameterList = new();
 	private readonly Dictionary<string, ParameterSymbol> parameters = new();
-	private readonly List<MethodSymbol> overloads = new();
-
-	public MethodSymbol(string name, Declaration declaration, AccessModifier accessModifier,
-						IEnumerable<MethodModifier> modifiers) : base(name, declaration, accessModifier)
+	
+	public LambdaSymbol(string name, Declaration declaration) : base(name, declaration)
 	{
-		Modifiers = modifiers.ToImmutableArray();
 	}
-
+	
 	public ParameterSymbol AddParameter(string name, Declaration declaration, bool isReference)
 	{
 		var parameter = new ParameterSymbol(name, declaration, isReference);
 		parameters.Add(name, parameter);
 		parameterList.Add(parameter);
 		return parameter;
-	}
-
-	public void AddOverload(MethodSymbol overload)
-	{
-		overloads.Add(overload);
 	}
 
 	public void ResolveParameter(string name, ResolvedType type)
@@ -46,10 +30,5 @@ public sealed class MethodSymbol : MemberSymbol
 	public IEnumerable<ParameterSymbol> GetParameters()
 	{
 		return parameterList;
-	}
-
-	public IEnumerable<MethodSymbol> GetOverloads()
-	{
-		return overloads;
 	}
 }

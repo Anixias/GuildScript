@@ -29,7 +29,7 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 			var module = semanticModel.AddModule(name);
 			semanticModel.VisitSymbol(module);
 		}
-		
+
 		semanticModel.EnterScope(statement);
 		foreach (var topLevelStatement in statement.Statements)
 		{
@@ -48,14 +48,14 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 		var entryPointSymbol = semanticModel.AddEntryPoint(statement);
 		semanticModel.VisitSymbol(entryPointSymbol);
 		semanticModel.EnterScope(statement);
-		
+
 		foreach (var parameter in statement.ParameterList)
 		{
 			var parameterDeclaration = new Declaration(parameter.Name, statement);
 			semanticModel.AddSymbol(entryPointSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
 				parameter.IsReference));
 		}
-		
+
 		statement.Body.AcceptVisitor(this);
 		semanticModel.ExitScope();
 		semanticModel.Return();
@@ -69,15 +69,15 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 	public void VisitBlockStatement(Statement.Block statement)
 	{
 		semanticModel.EnterScope(statement);
-		
+
 		foreach (var bodyStatement in statement.Statements)
 		{
 			bodyStatement.AcceptVisitor(this);
 		}
-		
+
 		semanticModel.ExitScope();
 	}
-	
+
 	private static AccessModifier GetAccessModifier(SyntaxToken? modifierToken, AccessModifier @default)
 	{
 		if (modifierToken is null)
@@ -108,7 +108,7 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 				_                        => ClassModifier.None
 			};
 		}
-		
+
 		try
 		{
 			var classModifier = GetClassModifier(statement.ClassModifier);
@@ -127,7 +127,7 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 			{
 				member.AcceptVisitor(this);
 			}
-		
+
 			semanticModel.ExitScope();
 			semanticModel.Return();
 		}
@@ -143,14 +143,14 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 		{
 			if (modifierToken is null)
 				return StructModifier.None;
-			
+
 			return modifierToken.Type switch
 			{
 				SyntaxTokenType.Immutable => StructModifier.Immutable,
 				_                         => StructModifier.None
 			};
 		}
-		
+
 		try
 		{
 			var structModifier = GetStructModifier(statement.StructModifier);
@@ -158,10 +158,10 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 
 			var declaration = new Declaration(statement.NameToken, statement);
 			var symbol = semanticModel.AddStruct(statement.NameToken.Text, declaration, structModifier, accessModifier);
-			
+
 			semanticModel.VisitSymbol(symbol);
 			semanticModel.EnterScope(statement);
-			
+
 			symbol.TemplateParameters = statement.TypeParameters.Select(templateParameter =>
 				semanticModel.AddTemplateParameter(templateParameter.Text,
 					new Declaration(templateParameter, statement))).ToImmutableArray();
@@ -170,7 +170,7 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 			{
 				member.AcceptVisitor(this);
 			}
-		
+
 			semanticModel.ExitScope();
 			semanticModel.Return();
 		}
@@ -188,10 +188,10 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 			var declaration = new Declaration(statement.NameToken, statement);
 
 			var symbol = semanticModel.AddInterface(statement.NameToken.Text, declaration, accessModifier);
-			
+
 			semanticModel.VisitSymbol(symbol);
 			semanticModel.EnterScope(statement);
-			
+
 			symbol.TemplateParameters = statement.TypeParameters.Select(templateParameter =>
 				semanticModel.AddTemplateParameter(templateParameter.Text,
 					new Declaration(templateParameter, statement))).ToImmutableArray();
@@ -200,7 +200,7 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 			{
 				member.AcceptVisitor(this);
 			}
-		
+
 			semanticModel.ExitScope();
 			semanticModel.Return();
 		}
@@ -283,9 +283,9 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 				semanticModel.AddSymbol(constructorSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
 					parameter.IsReference));
 			}
-			
+
 			statement.Body.AcceptVisitor(this);
-			
+
 			semanticModel.ExitScope();
 		}
 		catch (Exception e)
@@ -314,7 +314,7 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 			{
 				bodyStatement.AcceptVisitor(this);
 			}
-			
+
 			semanticModel.ExitScope();
 		}
 		catch (Exception e)
@@ -325,24 +325,24 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 
 	public void VisitAccessorTokenStatement(Statement.AccessorToken statement)
 	{
-		
+
 	}
 
 	public void VisitAccessorLambdaStatement(Statement.AccessorLambda statement)
 	{
-		
+
 	}
 
 	public void VisitAccessorLambdaSignatureStatement(Statement.AccessorLambdaSignature statement)
 	{
-		
+
 	}
-	
+
 	private static EventModifier GetEventModifier(SyntaxToken? modifierToken)
 	{
 		if (modifierToken is null)
 			return EventModifier.None;
-			
+
 		return modifierToken.Type switch
 		{
 			SyntaxTokenType.Global => EventModifier.Global,
@@ -469,9 +469,9 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 			methodSymbol.TemplateParameters = statement.TypeParameters.Select(templateParameter =>
 				semanticModel.AddTemplateParameter(templateParameter.Text,
 					new Declaration(templateParameter, statement))).ToImmutableArray();
-			
+
 			statement.Body.AcceptVisitor(this);
-			
+
 			semanticModel.ExitScope();
 		}
 		catch (Exception e)
@@ -532,7 +532,7 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 				}
 			}
 		}
-		
+
 		try
 		{
 			var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Private);
@@ -548,21 +548,21 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 
 	public void VisitBreakStatement(Statement.Break statement)
 	{
-		
+
 	}
 
 	public void VisitContinueStatement(Statement.Continue statement)
 	{
-		
+
 	}
 
 	public void VisitControlStatement(Statement.Control statement)
 	{
 		semanticModel.EnterScope(statement);
-		
+
 		statement.IfStatement.AcceptVisitor(this);
 		statement.ElseStatement?.AcceptVisitor(this);
-		
+
 		semanticModel.ExitScope();
 	}
 
@@ -583,11 +583,11 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 	public void VisitForStatement(Statement.For statement)
 	{
 		semanticModel.EnterScope(statement);
-		
+
 		statement.Initializer?.AcceptVisitor(this);
 		statement.Increment?.AcceptVisitor(this);
 		statement.Body.AcceptVisitor(this);
-		
+
 		semanticModel.ExitScope();
 	}
 
@@ -598,7 +598,7 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 		semanticModel.AddLocalVariable(statement.Iterator.Text, new Declaration(statement.Iterator, statement),
 			statement.IteratorType);
 		statement.Body.AcceptVisitor(this);
-		
+
 		semanticModel.ExitScope();
 	}
 
@@ -611,27 +611,27 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 
 	public void VisitReturnStatement(Statement.Return statement)
 	{
-		
+
 	}
 
 	public void VisitThrowStatement(Statement.Throw statement)
 	{
-		
+
 	}
 
 	public void VisitSealStatement(Statement.Seal statement)
 	{
-		
+
 	}
 
 	public void VisitTryStatement(Statement.Try statement)
 	{
 		semanticModel.EnterScope(statement);
-		
+
 		statement.TryStatement.AcceptVisitor(this);
 		statement.CatchStatement?.AcceptVisitor(this);
 		statement.FinallyStatement?.AcceptVisitor(this);
-		
+
 		semanticModel.ExitScope();
 	}
 
@@ -650,7 +650,7 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 
 	public void VisitLockStatement(Statement.Lock statement)
 	{
-		
+
 	}
 
 	public void VisitSwitchStatement(Statement.Switch statement)
@@ -687,7 +687,7 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 
 	public void VisitExpressionStatement(Statement.ExpressionStatement statement)
 	{
-		
+
 	}
 
 	public void VisitOperatorOverloadStatement(Statement.OperatorOverload statement)
@@ -720,9 +720,9 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 				semanticModel.AddSymbol(methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
 					parameter.IsReference));
 			}
-			
+
 			statement.Body.AcceptVisitor(this);
-			
+
 			semanticModel.ExitScope();
 		}
 		catch (Exception e)
@@ -737,7 +737,7 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 		{
 			// @TODO Add support for TokenSpan in Declaration
 			var declaration = new Declaration(statement.Operator.TokenSpan.Tokens[0], statement);
-			
+
 			var parameters = new List<string>();
 			foreach (var parameter in statement.ParameterList)
 			{
@@ -746,11 +746,11 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 
 			var parameterName = string.Join(", ", parameters);
 			var name = $"[{statement.Operator.TokenSpan}]({parameterName})";
-			
+
 			var modifiers = statement.Immutable
 				? new[] { MethodModifier.Global, MethodModifier.Immutable }
 				: new[] { MethodModifier.Global };
-			
+
 			var methodSymbol = semanticModel.AddOperatorOverload(name, declaration, AccessModifier.Public, modifiers,
 				statement.Operator);
 
@@ -771,18 +771,26 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 
 	public void VisitAwaitExpression(Expression.Await expression)
 	{
+		expression.Expression.AcceptVisitor(this);
 	}
 
 	public void VisitConditionalExpression(Expression.Conditional expression)
 	{
+		expression.Condition.AcceptVisitor(this);
+		expression.TrueExpression.AcceptVisitor(this);
+		expression.FalseExpression.AcceptVisitor(this);
 	}
 
 	public void VisitBinaryExpression(Expression.Binary expression)
 	{
+		expression.Left.AcceptVisitor(this);
+		expression.Right.AcceptVisitor(this);
 	}
 
 	public void VisitTypeRelationExpression(Expression.TypeRelation expression)
 	{
+		expression.Operand.AcceptVisitor(this);
+
 		if (expression.IdentifierToken is null)
 			return;
 
@@ -799,37 +807,75 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 
 	public void VisitUnaryExpression(Expression.Unary expression)
 	{
+		expression.Operand.AcceptVisitor(this);
 	}
 
 	public void VisitIdentifierExpression(Expression.Identifier expression)
 	{
+
 	}
 
 	public void VisitQualifierExpression(Expression.Qualifier expression)
 	{
+
 	}
 
 	public void VisitCallExpression(Expression.Call expression)
 	{
+		expression.Function.AcceptVisitor(this);
+
+		foreach (var templateArgument in expression.TemplateArguments)
+		{
+			templateArgument.AcceptVisitor(this);
+		}
+
+		foreach (var argument in expression.Arguments)
+		{
+			argument.AcceptVisitor(this);
+		}
 	}
 
 	public void VisitLiteralExpression(Expression.Literal expression)
 	{
+
 	}
 
 	public void VisitInstantiateExpression(Expression.Instantiate expression)
 	{
+		foreach (var argument in expression.Arguments)
+		{
+			argument.AcceptVisitor(this);
+		}
+
+		foreach (var initializer in expression.Initializers)
+		{
+			initializer.AcceptVisitor(this);
+		}
 	}
 
 	public void VisitCastExpression(Expression.Cast expression)
 	{
+		expression.Expression.AcceptVisitor(this);
 	}
 
 	public void VisitIndexExpression(Expression.Index expression)
 	{
+		expression.Expression.AcceptVisitor(this);
+		expression.Key.AcceptVisitor(this);
 	}
 
 	public void VisitLambdaExpression(Expression.Lambda expression)
 	{
+		var lambda = semanticModel.AddLambda(new Declaration(null, expression));
+		semanticModel.EnterScope(expression);
+
+		foreach (var parameter in expression.ParameterList)
+		{
+			var declaration = new Declaration(parameter.Name, expression);
+			var parameterSymbol = lambda.AddParameter(parameter.Name.Text, declaration, parameter.IsReference);
+			semanticModel.AddSymbol(parameterSymbol);
+		}
+
+		semanticModel.ExitScope();
 	}
 }

@@ -8,13 +8,13 @@ public abstract class TypeSymbol : Symbol
 	protected Declaration? Declaration { get; }
 	protected readonly Dictionary<string, TypeSymbol> nestedTypes = new();
 	protected readonly Dictionary<string, MemberSymbol> members = new();
-	
+
 	protected TypeSymbol(string name, AccessModifier accessModifier) : base(name)
 	{
 		AccessModifier = accessModifier;
 		Declaration = null;
 	}
-	
+
 	protected TypeSymbol(string name, Declaration declaration, AccessModifier accessModifier) : base(name)
 	{
 		Declaration = declaration;
@@ -33,7 +33,7 @@ public abstract class TypeSymbol : Symbol
 		{
 			if (AddChild(member) && members.TryAdd(member.Name, member))
 				return;
-			
+
 			if (children[member.Name] is MethodSymbol existingMethod)
 			{
 				existingMethod.AddOverload(method);
@@ -41,12 +41,12 @@ public abstract class TypeSymbol : Symbol
 
 			return;
 		}
-		
+
 		if (member is IndexerSymbol indexer)
 		{
 			if (AddChild(member) && members.TryAdd(member.Name, member))
 				return;
-			
+
 			if (children[member.Name] is IndexerSymbol existingMethod)
 			{
 				existingMethod.AddOverload(indexer);
@@ -54,12 +54,12 @@ public abstract class TypeSymbol : Symbol
 
 			return;
 		}
-		
+
 		if (member is ExternalMethodSymbol externalMethod)
 		{
 			if (AddChild(member) && members.TryAdd(member.Name, member))
 				return;
-			
+
 			if (children[member.Name] is ExternalMethodSymbol existingMethod)
 			{
 				existingMethod.AddOverload(externalMethod);
@@ -67,12 +67,12 @@ public abstract class TypeSymbol : Symbol
 
 			return;
 		}
-		
+
 		if (member is ConstructorSymbol constructor)
 		{
 			if (AddChild(member) && members.TryAdd(member.Name, member))
 				return;
-			
+
 			if (children[member.Name] is ConstructorSymbol existingMethod)
 			{
 				existingMethod.AddOverload(constructor);
@@ -80,7 +80,7 @@ public abstract class TypeSymbol : Symbol
 
 			return;
 		}
-		
+
 		if (!AddChild(member) || !members.TryAdd(member.Name, member))
 			throw new Exception($"The member '{member.Name}' is already declared in '{Name}'.");
 	}
@@ -89,7 +89,7 @@ public abstract class TypeSymbol : Symbol
 	{
 		return members.TryGetValue(name, out var member) ? member : null;
 	}
-	
+
 	public bool InheritsFrom(TypeSymbol ancestor)
 	{
 		// All types implicitly inherit from Object
@@ -152,7 +152,7 @@ public abstract class TypeSymbol : Symbol
 
 			if (parameters[0].Type != leftType)
 				continue;
-			
+
 			if (parameters[1].Type != rightType)
 				continue;
 
@@ -197,7 +197,7 @@ public sealed class NativeTypeSymbol : TypeSymbol
 	private NativeTypeSymbol(string name) : base(name, AccessModifier.Public)
 	{
 	}
-	
+
 	public static readonly NativeTypeSymbol Int8 = new("int8");
 	public static readonly NativeTypeSymbol UInt8 = new("uint8");
 	public static readonly NativeTypeSymbol Int16 = new("int16");

@@ -7,7 +7,7 @@ namespace GuildScript.Analysis.Semantics;
 public abstract class ResolvedExpression : ResolvedNode
 {
 	public abstract ResolvedType? Type { get; }
-	
+
 	public interface IVisitor
 	{
 		void VisitAwaitExpression(Await expression);
@@ -24,15 +24,15 @@ public abstract class ResolvedExpression : ResolvedNode
 		void VisitIndexExpression(Index expression);
 		void VisitLambdaExpression(Lambda expression);
 	}
-	
+
 	public abstract void AcceptVisitor(IVisitor visitor);
-	
+
 	public sealed class Await : ResolvedExpression
 	{
 		public override ResolvedType? Type => Expression.Type;
-		
+
 		public ResolvedExpression Expression { get; }
-		
+
 		public Await(ResolvedExpression expression)
 		{
 			Expression = expression;
@@ -58,7 +58,7 @@ public abstract class ResolvedExpression : ResolvedNode
 			Condition = condition;
 			TrueExpression = trueExpression;
 			FalseExpression = falseExpression;
-			
+
 			Type = ResolveType();
 		}
 
@@ -74,7 +74,7 @@ public abstract class ResolvedExpression : ResolvedNode
 				if (nullableTrueType.BaseType == FalseExpression.Type)
 					return nullableTrueType;
 			}
-				
+
 			// True? = False
 			if (FalseExpression.Type is NullableResolvedType nullableFalseType)
 			{
@@ -93,7 +93,7 @@ public abstract class ResolvedExpression : ResolvedNode
 						return new NullableResolvedType(type);
 				}
 			}
-				
+
 			// False = null, True = Type or Type? -> return Type?
 			if (FalseExpression.Type is null)
 			{
@@ -108,7 +108,7 @@ public abstract class ResolvedExpression : ResolvedNode
 
 			return null;
 		}
-		
+
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitConditionalExpression(this);
@@ -118,7 +118,7 @@ public abstract class ResolvedExpression : ResolvedNode
 	public sealed class Binary : ResolvedExpression
 	{
 		public override ResolvedType? Type { get; }
-		
+
 		public ResolvedExpression Left { get; }
 		public BinaryOperator Operator { get; }
 		public ResolvedExpression Right { get; }
@@ -143,13 +143,13 @@ public abstract class ResolvedExpression : ResolvedNode
 	public sealed class TypeRelation : ResolvedExpression
 	{
 		public override ResolvedType Type => SimpleResolvedType.Bool;
-		
-		public ResolvedExpression Operand { get; }
+
+		public Symbol Operand { get; }
 		public BinaryOperator Operator { get; }
 		public ResolvedType? TypeQuery { get; }
 		public LocalVariableSymbol? VariableSymbol { get; }
 
-		public TypeRelation(ResolvedExpression operand, BinaryOperator @operator, ResolvedType? typeQuery,
+		public TypeRelation(Symbol operand, BinaryOperator @operator, ResolvedType? typeQuery,
 							LocalVariableSymbol? variableSymbol)
 		{
 			Operand = operand;
@@ -276,7 +276,7 @@ public abstract class ResolvedExpression : ResolvedNode
 		public ResolvedType InstanceType { get; }
 		public ImmutableArray<ResolvedExpression> Arguments { get; }
 		public ImmutableArray<ResolvedExpression> Initializers { get; }
-		
+
 		public Instantiate(ResolvedType instanceType, IEnumerable<ResolvedExpression> arguments,
 						   IEnumerable<ResolvedExpression> initializers)
 		{
@@ -284,7 +284,7 @@ public abstract class ResolvedExpression : ResolvedNode
 			Arguments = arguments.ToImmutableArray();
 			Initializers = initializers.ToImmutableArray();
 		}
-		
+
 		public Instantiate(ResolvedType instanceType, IEnumerable<ResolvedExpression> arguments)
 		{
 			InstanceType = instanceType;
@@ -304,7 +304,7 @@ public abstract class ResolvedExpression : ResolvedNode
 		public ResolvedExpression Expression { get; }
 		public ResolvedType TargetType { get; }
 		public bool IsConditional { get; }
-		
+
 		public Cast(ResolvedExpression expression, ResolvedType targetType, bool isConditional)
 		{
 			Expression = expression;
@@ -316,7 +316,7 @@ public abstract class ResolvedExpression : ResolvedNode
 				TargetType = new NullableResolvedType(TargetType);
 			}
 		}
-		
+
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitCastExpression(this);
@@ -326,13 +326,13 @@ public abstract class ResolvedExpression : ResolvedNode
 	public sealed class Index : ResolvedExpression
 	{
 		public override ResolvedType Type { get; }
-		public ResolvedExpression Expression { get; }
+		public Symbol Symbol { get; }
 		public ResolvedExpression Key { get; }
 		public bool IsConditional { get; }
-		
-		public Index(ResolvedExpression expression, ResolvedExpression key, bool isConditional, ResolvedType type)
+
+		public Index(Symbol symbol, ResolvedExpression key, bool isConditional, ResolvedType type)
 		{
-			Expression = expression;
+			Symbol = symbol;
 			Key = key;
 			IsConditional = isConditional;
 			Type = type;
@@ -352,12 +352,12 @@ public abstract class ResolvedExpression : ResolvedNode
 	public sealed class Lambda : ResolvedExpression
 	{
 		public override ResolvedType? Type { get; }
-		public ImmutableArray<ParameterSymbol> ParameterList { get; }
+		public LambdaSymbol Symbol { get; }
 		public ResolvedStatement Body { get; }
-		
-		public Lambda(IEnumerable<ParameterSymbol> parameterList, ResolvedType? returnType, ResolvedStatement body)
+
+		public Lambda(LambdaSymbol symbol, ResolvedType? returnType, ResolvedStatement body)
 		{
-			ParameterList = parameterList.ToImmutableArray();
+			Symbol = symbol;
 			Type = returnType;
 			Body = body;
 		}

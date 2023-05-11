@@ -3,17 +3,17 @@ namespace GuildScript.Analysis.Syntax;
 public abstract class Operator
 {
 	public SyntaxTokenSpan TokenSpan { get; }
-	
+
 	protected Operator(SyntaxTokenSpan tokenSpan)
 	{
 		TokenSpan = tokenSpan;
 	}
-	
+
 	public override string ToString()
 	{
 		return TokenSpan.ToString();
 	}
-	
+
 	public override bool Equals(object? obj)
 	{
 		if (obj is Operator other)
