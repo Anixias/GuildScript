@@ -187,10 +187,10 @@ public class TreePrinter : Expression.IVisitor, Statement.IVisitor
 		PopIndent();
 		
 		IsLastChild = false;
-		Write("Operator: " + expression.OperatorToken.Text);
+		Write("Operator: " + expression.Operator.TokenSpan);
 		
 		IsLastChild = true;
-		Write(expression.IsPostfix ? "Postfix" : "Prefix");
+		Write(expression.Operator.IsPostfix ? "Postfix" : "Prefix");
 		
 		PopIndent();
 	}
@@ -1404,7 +1404,7 @@ public class TreePrinter : Expression.IVisitor, Statement.IVisitor
 		PushIndent();
 		IsLastChild = false;
 		Write("Return Type: " + statement.ReturnType);
-		Write("Operator: " + statement.OperatorTokens);
+		Write("Operator: " + statement.Operator.TokenSpan);
 		
 		Write("Parameters:");
 		
@@ -1434,7 +1434,7 @@ public class TreePrinter : Expression.IVisitor, Statement.IVisitor
 		PushIndent();
 		IsLastChild = false;
 		Write("Return Type: " + statement.ReturnType);
-		Write("Operator: " + statement.OperatorTokens);
+		Write("Operator: " + statement.Operator.TokenSpan);
 		
 		IsLastChild = true;
 		Write("Parameters:");
