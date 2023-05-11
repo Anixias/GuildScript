@@ -231,11 +231,11 @@ public sealed class SemanticModel
 	}
 
 	public MethodSymbol AddOperatorOverload(string name, Declaration declaration, AccessModifier accessModifier,
-								  IEnumerable<MethodModifier> methodModifiers)
+								  IEnumerable<MethodModifier> methodModifiers, Operator @operator)
 	{
 		var symbol = new MethodSymbol(name, declaration, accessModifier, methodModifiers)
 		{
-			IsOperator = true
+			Operator = @operator
 		};
 		
 		symbols.Add(symbol);

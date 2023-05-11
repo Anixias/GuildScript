@@ -1,11 +1,10 @@
 using System.Collections.Immutable;
-using GuildScript.Analysis.Semantics.Symbols;
 using GuildScript.Analysis.Syntax;
 using GuildScript.Analysis.Text;
 
 namespace GuildScript.Analysis.Semantics;
 
-public sealed class Collector : Statement.IVisitor
+public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 {
 	public DiagnosticCollection Diagnostics { get; } = new();
 	private readonly SemanticModel semanticModel;
@@ -656,26 +655,34 @@ public sealed class Collector : Statement.IVisitor
 
 	public void VisitSwitchStatement(Statement.Switch statement)
 	{
-		semanticModel.EnterScope(statement);
-
-		foreach (var section in statement.Sections)
+		try
 		{
-			semanticModel.EnterScope(section.Body);
-			foreach (var label in section.Labels)
-			{
-				if (label is not Statement.Switch.PatternLabel patternLabel)
-					continue;
+			semanticModel.EnterScope(statement);
 
-				if (patternLabel.Identifier is null)
-					continue;
-				
-				semanticModel.AddLocalVariable(patternLabel.Identifier.Text,
-					new Declaration(patternLabel.Identifier, statement), patternLabel.Type);
+			foreach (var section in statement.Sections)
+			{
+				semanticModel.EnterScope(section.Body);
+				foreach (var label in section.Labels)
+				{
+					if (label is not Statement.Switch.PatternLabel patternLabel)
+						continue;
+
+					if (patternLabel.Identifier is null)
+						continue;
+
+					semanticModel.AddLocalVariable(patternLabel.Identifier.Text,
+						new Declaration(patternLabel.Identifier, statement), patternLabel.Type);
+				}
+
+				semanticModel.ExitScope();
 			}
+
 			semanticModel.ExitScope();
 		}
-
-		semanticModel.ExitScope();
+		catch (Exception e)
+		{
+			Diagnostics.ReportTypeCollectorException(statement.SwitchToken, e.Message);
+		}
 	}
 
 	public void VisitExpressionStatement(Statement.ExpressionStatement statement)
@@ -688,16 +695,23 @@ public sealed class Collector : Statement.IVisitor
 		try
 		{
 			// @TODO Add support for TokenSpan in Declaration
-			var declaration = new Declaration(statement.OperatorTokens.Tokens[0], statement);
+			var declaration = new Declaration(statement.Operator.TokenSpan.Tokens[0], statement);
 
-			var parameters = string.Join(", ", statement.ParameterList);
-			var name = $"[{statement.OperatorTokens}]({parameters})";
+			var parameters = new List<string>();
+			foreach (var parameter in statement.ParameterList)
+			{
+				parameters.Add((parameter.IsReference ? "ref " : "") + parameter.Type);
+			}
+
+			var parameterName = string.Join(", ", parameters);
+			var name = $"[{statement.Operator.TokenSpan}]({parameterName})";
 
 			var modifiers = statement.Immutable
 				? new[] { MethodModifier.Global, MethodModifier.Immutable }
 				: new[] { MethodModifier.Global };
-			
-			var methodSymbol = semanticModel.AddMethod(name, declaration, AccessModifier.Public, modifiers);
+
+			var methodSymbol = semanticModel.AddOperatorOverload(name, declaration, AccessModifier.Public, modifiers,
+				statement.Operator);
 
 			semanticModel.EnterScope(statement);
 			foreach (var parameter in statement.ParameterList)
@@ -713,7 +727,7 @@ public sealed class Collector : Statement.IVisitor
 		}
 		catch (Exception e)
 		{
-			Diagnostics.ReportTypeCollectorException(statement.OperatorTokens.Tokens[0], e.Message);
+			Diagnostics.ReportTypeCollectorException(statement.Operator.TokenSpan.Tokens[0], e.Message);
 		}
 	}
 
@@ -722,16 +736,23 @@ public sealed class Collector : Statement.IVisitor
 		try
 		{
 			// @TODO Add support for TokenSpan in Declaration
-			var declaration = new Declaration(statement.OperatorTokens.Tokens[0], statement);
+			var declaration = new Declaration(statement.Operator.TokenSpan.Tokens[0], statement);
 			
-			var parameters = string.Join(", ", statement.ParameterList);
-			var name = $"[{statement.OperatorTokens}]({parameters})";
+			var parameters = new List<string>();
+			foreach (var parameter in statement.ParameterList)
+			{
+				parameters.Add((parameter.IsReference ? "ref " : "") + parameter.Type);
+			}
+
+			var parameterName = string.Join(", ", parameters);
+			var name = $"[{statement.Operator.TokenSpan}]({parameterName})";
 			
 			var modifiers = statement.Immutable
 				? new[] { MethodModifier.Global, MethodModifier.Immutable }
 				: new[] { MethodModifier.Global };
 			
-			var methodSymbol = semanticModel.AddMethod(name, declaration, AccessModifier.Public, modifiers);
+			var methodSymbol = semanticModel.AddOperatorOverload(name, declaration, AccessModifier.Public, modifiers,
+				statement.Operator);
 
 			semanticModel.EnterScope(statement);
 			foreach (var parameter in statement.ParameterList)
@@ -744,7 +765,71 @@ public sealed class Collector : Statement.IVisitor
 		}
 		catch (Exception e)
 		{
-			Diagnostics.ReportTypeCollectorException(statement.OperatorTokens.Tokens[0], e.Message);
+			Diagnostics.ReportTypeCollectorException(statement.Operator.TokenSpan.Tokens[0], e.Message);
 		}
+	}
+
+	public void VisitAwaitExpression(Expression.Await expression)
+	{
+	}
+
+	public void VisitConditionalExpression(Expression.Conditional expression)
+	{
+	}
+
+	public void VisitBinaryExpression(Expression.Binary expression)
+	{
+	}
+
+	public void VisitTypeRelationExpression(Expression.TypeRelation expression)
+	{
+		if (expression.IdentifierToken is null)
+			return;
+
+		try
+		{
+			var declaration = new Declaration(expression.IdentifierToken, expression);
+			semanticModel.AddLocalVariable(expression.IdentifierToken.Text, declaration, expression.Type);
+		}
+		catch (Exception e)
+		{
+			Diagnostics.ReportTypeCollectorException(expression.IdentifierToken, e.Message);
+		}
+	}
+
+	public void VisitUnaryExpression(Expression.Unary expression)
+	{
+	}
+
+	public void VisitIdentifierExpression(Expression.Identifier expression)
+	{
+	}
+
+	public void VisitQualifierExpression(Expression.Qualifier expression)
+	{
+	}
+
+	public void VisitCallExpression(Expression.Call expression)
+	{
+	}
+
+	public void VisitLiteralExpression(Expression.Literal expression)
+	{
+	}
+
+	public void VisitInstantiateExpression(Expression.Instantiate expression)
+	{
+	}
+
+	public void VisitCastExpression(Expression.Cast expression)
+	{
+	}
+
+	public void VisitIndexExpression(Expression.Index expression)
+	{
+	}
+
+	public void VisitLambdaExpression(Expression.Lambda expression)
+	{
 	}
 }

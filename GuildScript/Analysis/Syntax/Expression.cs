@@ -171,14 +171,12 @@ public abstract class Expression : SyntaxNode
 	public sealed class Unary : Expression
 	{
 		public Expression Operand { get; }
-		public SyntaxToken OperatorToken { get; }
-		public bool IsPostfix { get; }
+		public UnaryOperator Operator { get; }
 
-		public Unary(Expression operand, SyntaxToken operatorToken, bool isPostfix = false)
+		public Unary(Expression operand, UnaryOperator @operator)
 		{
 			Operand = operand;
-			OperatorToken = operatorToken;
-			IsPostfix = isPostfix;
+			Operator = @operator;
 		}
 
 		public override void AcceptVisitor(IVisitor visitor)
@@ -195,8 +193,7 @@ public abstract class Expression : SyntaxNode
 		{
 			var hash = 0;
 			hash ^= Operand.GetHashCode();
-			hash ^= OperatorToken.Type.GetHashCode() << 1;
-			hash ^= IsPostfix.GetHashCode() << 2;
+			hash ^= Operator.GetHashCode() << 1;
 			return hash;
 		}
 	}

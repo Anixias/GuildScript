@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using GuildScript.Analysis.Syntax;
 
 namespace GuildScript.Analysis.Semantics.Symbols;
 
@@ -6,7 +7,8 @@ public sealed class MethodSymbol : MemberSymbol
 {
 	public ImmutableArray<MethodModifier> Modifiers { get; }
 	public ResolvedType? ReturnType { get; set; }
-	public bool IsOperator { get; set; }
+	public bool IsOperator => Operator is not null;
+	public Operator? Operator { get; set; }
 	
 	private readonly Dictionary<string, ParameterSymbol> parameters = new();
 	private readonly List<MethodSymbol> overloads = new();
@@ -42,6 +44,11 @@ public sealed class MethodSymbol : MemberSymbol
 	public IEnumerable<ParameterSymbol> GetParameters()
 	{
 		return parameters.Values;
+	}
+
+	public IEnumerable<MethodSymbol> GetOverloads()
+	{
+		return overloads;
 	}
 }
 

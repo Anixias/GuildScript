@@ -393,7 +393,7 @@ public sealed class Parser
 
 	private Statement.Switch ParseSwitchStatement()
 	{
-		Consume(SyntaxTokenType.Switch);
+		var switchToken = Consume(SyntaxTokenType.Switch);
 		Consume(SyntaxTokenType.OpenParen);
 		var expression = ParseExpression();
 		Consume(SyntaxTokenType.CloseParen);
@@ -439,7 +439,7 @@ public sealed class Parser
 		}
 		
 		Consume(SyntaxTokenType.CloseBrace);
-		return new Statement.Switch(expression, sections);
+		return new Statement.Switch(expression, sections, switchToken);
 	}
 
 	private Statement.VariableDeclaration ParseVariableDeclarationStatement()
@@ -1347,8 +1347,23 @@ public sealed class Parser
 		Consume(SyntaxTokenType.CloseParen);
 
 		var body = ParseBlock();
-		var @operator = new SyntaxTokenSpan(operatorTokens);
-		return new Statement.OperatorOverload(returnType, @operator, parameterList, body, immutable);
+
+		switch (parameterList.Count)
+		{
+			case 1:
+			{
+				var isPostfix = parameterList[0].IsReference;
+				var @operator = new UnaryOperator(new SyntaxTokenSpan(operatorTokens), isPostfix);
+				return new Statement.OperatorOverload(returnType, @operator, parameterList, body, immutable);
+			}
+			case 2:
+			{
+				var @operator = new BinaryOperator(new SyntaxTokenSpan(operatorTokens));
+				return new Statement.OperatorOverload(returnType, @operator, parameterList, body, immutable);
+			}
+			default:
+				throw Error("Operator overload must have 1 or 2 parameters.");
+		}
 	}
 
 	private Statement.OperatorOverloadSignature ParseOperatorOverloadSignature()
@@ -1377,8 +1392,23 @@ public sealed class Parser
 		Consume(SyntaxTokenType.CloseParen);
 		Consume(SyntaxTokenType.Semicolon);
 		
-		var @operator = new SyntaxTokenSpan(operatorTokens);
-		return new Statement.OperatorOverloadSignature(returnType, @operator, parameterList, immutable);
+
+		switch (parameterList.Count)
+		{
+			case 1:
+			{
+				var isPostfix = parameterList[0].IsReference;
+				var @operator = new UnaryOperator(new SyntaxTokenSpan(operatorTokens), isPostfix);
+				return new Statement.OperatorOverloadSignature(returnType, @operator, parameterList, immutable);
+			}
+			case 2:
+			{
+				var @operator = new BinaryOperator(new SyntaxTokenSpan(operatorTokens));
+				return new Statement.OperatorOverloadSignature(returnType, @operator, parameterList, immutable);
+			}
+			default:
+				throw Error("Operator overload must have 1 or 2 parameters.");
+		}
 	}
 
 	private Statement.MethodSignature ParseMethodSignature()
@@ -1778,7 +1808,7 @@ public sealed class Parser
 			return ParsePrimaryExpression();
 		
 		var operand = ParseUnaryExpression();
-		return new Expression.Unary(operand, operatorToken);
+		return new Expression.Unary(operand, new UnaryOperator(operatorToken, false));
 	}
 
 	private Expression ParseTypeExpression()
@@ -1863,7 +1893,7 @@ public sealed class Parser
 			else if (Match(out var postfixOperator, SyntaxTokenType.PlusPlus, SyntaxTokenType.MinusMinus,
 						 SyntaxTokenType.Bang))
 			{
-				primary = new Expression.Unary(primary, postfixOperator, true);
+				primary = new Expression.Unary(primary, new UnaryOperator(postfixOperator, true));
 			}
 			else
 			{

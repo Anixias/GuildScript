@@ -669,16 +669,16 @@ public abstract class Statement : SyntaxNode
 	{
 		public bool Immutable { get; }
 		public TypeSyntax ReturnType { get; }
-		public SyntaxTokenSpan OperatorTokens { get; }
+		public Operator Operator { get; }
 		public ImmutableArray<Variable> ParameterList { get; }
 		public Statement Body { get; }
 
-		public OperatorOverload(TypeSyntax returnType, SyntaxTokenSpan operatorTokens,
+		public OperatorOverload(TypeSyntax returnType, Operator @operator,
 								IEnumerable<Variable> parameterList, Statement body, bool immutable)
 
 		{
 			ReturnType = returnType;
-			OperatorTokens = operatorTokens;
+			Operator = @operator;
 			ParameterList = parameterList.ToImmutableArray();
 			Body = body;
 			Immutable = immutable;
@@ -699,15 +699,15 @@ public abstract class Statement : SyntaxNode
 	{
 		public bool Immutable { get; }
 		public TypeSyntax ReturnType { get; }
-		public SyntaxTokenSpan OperatorTokens { get; }
+		public Operator Operator { get; }
 		public ImmutableArray<Variable> ParameterList { get; }
 
-		public OperatorOverloadSignature(TypeSyntax returnType, SyntaxTokenSpan operatorTokens, 
+		public OperatorOverloadSignature(TypeSyntax returnType, Operator @operator, 
 										 IEnumerable<Variable> parameterList, bool immutable)
 
 		{
 			ReturnType = returnType;
-			OperatorTokens = operatorTokens;
+			Operator = @operator;
 			Immutable = immutable;
 			ParameterList = parameterList.ToImmutableArray();
 		}
@@ -1103,10 +1103,12 @@ public abstract class Statement : SyntaxNode
 		
 		public Expression Expression { get; }
 		public ImmutableArray<Section> Sections { get; }
+		public SyntaxToken SwitchToken { get; }
 
-		public Switch(Expression expression, IEnumerable<Section> sections)
+		public Switch(Expression expression, IEnumerable<Section> sections, SyntaxToken switchToken)
 		{
 			Expression = expression;
+			SwitchToken = switchToken;
 			Sections = sections.ToImmutableArray();
 		}
 

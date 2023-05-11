@@ -1006,8 +1006,14 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		if (returnType is null)
 			throw new Exception($"Failed to resolve return type '{statement.ReturnType}'.");
 		
-		var parameterNames = string.Join(", ", statement.ParameterList);
-		var name = $"[{statement.OperatorTokens}] {statement.ReturnType} ({parameterNames})";
+		var parameters = new List<string>();
+		foreach (var parameter in statement.ParameterList)
+		{
+			parameters.Add((parameter.IsReference ? "ref " : "") + parameter.Type);
+		}
+
+		var parameterName = string.Join(", ", parameters);
+		var name = $"[{statement.Operator.TokenSpan}]({parameterName})";
 
 		var symbol = semanticModel.FindSymbol(name);
 		if (symbol is not MethodSymbol methodSymbol)
@@ -1031,9 +1037,9 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.ExitScope();
 
 		methodSymbol.Resolved = true;
-		var operatorSymbol = ResolveOperator(statement.OperatorTokens.ToString());
+		var operatorSymbol = ResolveOperator(statement.Operator.TokenSpan.ToString());
 		if (operatorSymbol is null)
-			throw new Exception($"Failed to resolve operator '{statement.OperatorTokens}'.");
+			throw new Exception($"Failed to resolve operator '{statement.Operator.TokenSpan}'.");
 		
 		return new ResolvedStatement.OperatorOverload(returnType, operatorSymbol, methodSymbol, body);
 	}
@@ -1043,8 +1049,14 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		if (returnType is null)
 			throw new Exception($"Failed to resolve return type '{statement.ReturnType}'.");
 		
-		var parameterNames = string.Join(", ", statement.ParameterList);
-		var name = $"[{statement.OperatorTokens}] {statement.ReturnType} ({parameterNames})";
+		var parameters = new List<string>();
+		foreach (var parameter in statement.ParameterList)
+		{
+			parameters.Add((parameter.IsReference ? "ref " : "") + parameter.Type);
+		}
+
+		var parameterName = string.Join(", ", parameters);
+		var name = $"[{statement.Operator.TokenSpan}]({parameterName})";
 
 		var symbol = semanticModel.FindSymbol(name);
 		if (symbol is not MethodSymbol methodSymbol)
@@ -1067,9 +1079,9 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.ExitScope();
 
 		methodSymbol.Resolved = true;
-		var operatorSymbol = ResolveOperator(statement.OperatorTokens.ToString());
+		var operatorSymbol = ResolveOperator(statement.Operator.TokenSpan.ToString());
 		if (operatorSymbol is null)
-			throw new Exception($"Failed to resolve operator '{statement.OperatorTokens}'.");
+			throw new Exception($"Failed to resolve operator '{statement.Operator.TokenSpan}'.");
 		
 		return new ResolvedStatement.OperatorOverloadSignature(returnType, operatorSymbol, methodSymbol);
 	}
@@ -1088,16 +1100,6 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		return new ResolvedExpression.Conditional(condition, trueExpression, falseExpression);
 	}
 
-	private ResolvedType? ResolveBinaryOperation(ResolvedType? left, BinaryOperator binaryOperator,
-												 ResolvedType? right)
-	{
-		if (left is null || right is null)
-			return null;
-
-		if (left.TypeSymbol is NativeTypeSymbol && right.TypeSymbol is NativeTypeSymbol)
-			return binaryOperator.GetResultType(left, right);
-	}
-
 	public ResolvedExpression VisitBinaryExpression(Expression.Binary expression)
 	{
 		var left = expression.Left.AcceptVisitor(this);
@@ -1107,32 +1109,95 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			throw new Exception("Cannot operate on void types.");
 
 		ResolvedType? expressionType = null;
+		MethodSymbol? operatorMethod = null;
 		
 		if (left.Type.TypeSymbol is NativeTypeSymbol nativeLeftType &&
 			right.Type.TypeSymbol is NativeTypeSymbol nativeRightType)
 		{
-			switch (expression.Operator.Operation)
+			var resultType = expression.Operator.GetResultType(left.Type, right.Type);
+			
+			if (resultType is null)
+				throw new Exception($"Cannot use operator '{expression.Operator}' on types " +
+									$"'{nativeLeftType.Name}' and '{nativeRightType.Name}'.");
+		}
+		else
+		{
+			// Search for operator overloading
+			var leftOverload = left.Type.TypeSymbol.FindOperatorOverload(left.Type, expression.Operator, right.Type);
+			var rightOverload = right.Type.TypeSymbol.FindOperatorOverload(left.Type, expression.Operator, right.Type);
+
+			if (leftOverload is not null && rightOverload is not null)
+				throw new Exception("Ambiguous operator overload.");
+
+			if (leftOverload is not null)
 			{
-				case BinaryOperator.BinaryOperation.Assignment:
-					expressionType = left.Type;
-					break;
-				default:
-					throw new Exception($"Cannot use operator '{expression.Operator}' on types " +
-										$"'{nativeLeftType.Name}' and '{nativeRightType.Name}'.");
+				expressionType = leftOverload.ReturnType;
+				operatorMethod = leftOverload;
+			}
+			else if (rightOverload is not null)
+			{
+				expressionType = rightOverload.ReturnType;
+				operatorMethod = rightOverload;
 			}
 		}
 
-		return new ResolvedExpression.Binary(left, expression.Operator, right, expressionType);
+		return new ResolvedExpression.Binary(left, expression.Operator, right, expressionType, operatorMethod);
 	}
 
 	public ResolvedExpression VisitTypeRelationExpression(Expression.TypeRelation expression)
 	{
-		return new ResolvedExpression.TypeRelation();
+		var operand = expression.Operand.AcceptVisitor(this);
+		var typeQuery = expression.Type is null ? null : ResolveType(expression.Type);
+		
+		if (expression.IdentifierToken is null)
+			return new ResolvedExpression.TypeRelation(operand, expression.Operator, typeQuery, null);
+		
+		var symbol = semanticModel.FindSymbol(expression.IdentifierToken.Text);
+		if (symbol is not LocalVariableSymbol localVariableSymbol)
+			throw new Exception($"Failed to resolve local variable '{expression.IdentifierToken.Text}'.");
+
+		return new ResolvedExpression.TypeRelation(operand, expression.Operator, typeQuery, localVariableSymbol);
 	}
 
 	public ResolvedExpression VisitUnaryExpression(Expression.Unary expression)
 	{
-		return new ResolvedExpression.Unary();
+		var operand = expression.Operand.AcceptVisitor(this);
+
+		if (operand.Type is null)
+			throw new Exception("Cannot operate on void type.");
+
+		ResolvedType? expressionType = null;
+		MethodSymbol? operatorMethod = null;
+		
+		if (operand.Type.TypeSymbol is NativeTypeSymbol nativeType)
+		{
+			var resultType = expression.Operator.GetResultType(operand.Type);
+			
+			if (resultType is null)
+				throw new Exception($"Cannot use operator '{expression.Operator}' on type '{nativeType.Name}'.");
+		}
+		else
+		{
+			// Search for operator overloading
+			var leftOverload = left.Type.TypeSymbol.FindOperatorOverload(left.Type, expression.Operator, right.Type);
+			var rightOverload = right.Type.TypeSymbol.FindOperatorOverload(left.Type, expression.Operator, right.Type);
+
+			if (leftOverload is not null && rightOverload is not null)
+				throw new Exception("Ambiguous operator overload.");
+
+			if (leftOverload is not null)
+			{
+				expressionType = leftOverload.ReturnType;
+				operatorMethod = leftOverload;
+			}
+			else if (rightOverload is not null)
+			{
+				expressionType = rightOverload.ReturnType;
+				operatorMethod = rightOverload;
+			}
+		}
+
+		return new ResolvedExpression.Unary(operand, expression.Operator, expressionType, operatorMethod);
 	}
 
 	public ResolvedExpression VisitIdentifierExpression(Expression.Identifier expression)

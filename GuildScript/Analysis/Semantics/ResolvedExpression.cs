@@ -122,13 +122,16 @@ public abstract class ResolvedExpression : ResolvedNode
 		public ResolvedExpression Left { get; }
 		public BinaryOperator Operator { get; }
 		public ResolvedExpression Right { get; }
+		public MethodSymbol? OperatorMethod { get; }
 
-		public Binary(ResolvedExpression left, BinaryOperator @operator, ResolvedExpression right, ResolvedType? type)
+		public Binary(ResolvedExpression left, BinaryOperator @operator, ResolvedExpression right, ResolvedType? type,
+					  MethodSymbol? operatorMethod)
 		{
 			Left = left;
 			Operator = @operator;
 			Right = right;
 			Type = type;
+			OperatorMethod = operatorMethod;
 		}
 
 		public override void AcceptVisitor(IVisitor visitor)
@@ -146,7 +149,8 @@ public abstract class ResolvedExpression : ResolvedNode
 		public ResolvedType? TypeQuery { get; }
 		public LocalVariableSymbol? VariableSymbol { get; }
 
-		public TypeRelation(ResolvedExpression operand, BinaryOperator @operator, ResolvedType? typeQuery, LocalVariableSymbol? variableSymbol)
+		public TypeRelation(ResolvedExpression operand, BinaryOperator @operator, ResolvedType? typeQuery,
+							LocalVariableSymbol? variableSymbol)
 		{
 			Operand = operand;
 			Operator = @operator;
@@ -166,12 +170,15 @@ public abstract class ResolvedExpression : ResolvedNode
 		public SyntaxToken OperatorToken { get; }
 		public override ResolvedType? Type { get; }
 		public bool IsPostfix { get; }
+		public MethodSymbol? OperatorMethod { get; }
 
-		public Unary(ResolvedExpression operand, SyntaxToken operatorToken, ResolvedType? type, bool isPostfix = false)
+		public Unary(ResolvedExpression operand, SyntaxToken operatorToken, ResolvedType? type,
+					 MethodSymbol? operatorMethod, bool isPostfix = false)
 		{
 			Operand = operand;
 			OperatorToken = operatorToken;
 			Type = type;
+			OperatorMethod = operatorMethod;
 			IsPostfix = isPostfix;
 		}
 

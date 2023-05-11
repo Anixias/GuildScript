@@ -1,3 +1,5 @@
+using GuildScript.Analysis.Syntax;
+
 namespace GuildScript.Analysis.Semantics.Symbols;
 
 public abstract class TypeSymbol : Symbol
@@ -131,6 +133,62 @@ public abstract class TypeSymbol : Symbol
 		}
 
 		return false;
+	}
+
+	public MethodSymbol? FindOperatorOverload(ResolvedType leftType, BinaryOperator binaryOperator,
+											  ResolvedType rightType)
+	{
+		foreach (var member in members.Values)
+		{
+			if (member is not MethodSymbol method)
+				continue;
+
+			if (!method.IsOperator)
+				continue;
+
+			var parameters = method.GetParameters().ToArray();
+			if (parameters.Length != 2)
+				continue;
+
+			if (parameters[0].Type != leftType)
+				continue;
+			
+			if (parameters[1].Type != rightType)
+				continue;
+
+			if (method.Operator!.Equals(binaryOperator))
+				continue;
+
+			return method;
+		}
+
+		return null;
+	}
+
+	public MethodSymbol? FindOperatorOverload(ResolvedType operandType, UnaryOperator unaryOperator)
+	{
+		foreach (var member in members.Values)
+		{
+			if (member is not MethodSymbol method)
+				continue;
+
+			if (!method.IsOperator)
+				continue;
+
+			var parameters = method.GetParameters().ToArray();
+			if (parameters.Length != 1)
+				continue;
+
+			if (parameters[0].Type != operandType)
+				continue;
+
+			if (method.Operator!.Equals(unaryOperator))
+				continue;
+
+			return method;
+		}
+
+		return null;
 	}
 }
 
