@@ -285,13 +285,6 @@ public abstract class ResolvedExpression : ResolvedNode
 			Initializers = initializers.ToImmutableArray();
 		}
 
-		public Instantiate(ResolvedType instanceType, IEnumerable<ResolvedExpression> arguments)
-		{
-			InstanceType = instanceType;
-			Arguments = arguments.ToImmutableArray();
-			Initializers = ImmutableArray<ResolvedExpression>.Empty;
-		}
-
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitInstantiateExpression(this);

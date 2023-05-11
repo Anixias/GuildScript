@@ -65,6 +65,7 @@ public sealed class SimpleResolvedType : ResolvedType
 	public static readonly SimpleResolvedType Object = new(NativeTypeSymbol.Object);
 	public static readonly SimpleResolvedType String = new(NativeTypeSymbol.String);
 	public static readonly SimpleResolvedType Range = new(NativeTypeSymbol.Range);
+	public static readonly SimpleResolvedType Method = new(NativeTypeSymbol.Method);
 
 	private static readonly Dictionary<string, SimpleResolvedType> NativeTypes = new()
 	{
@@ -82,7 +83,8 @@ public sealed class SimpleResolvedType : ResolvedType
 		{ Syntax.SyntaxTokenType.Bool.ToString(), Bool },
 		{ Syntax.SyntaxTokenType.Object.ToString(), Object },
 		{ Syntax.SyntaxTokenType.String.ToString(), String },
-		{ "<<->>", Range }
+		{ "<<->>", Range },
+		{ "()", Method }
 	};
 
 	public static ResolvedType? FindNativeType(string token)

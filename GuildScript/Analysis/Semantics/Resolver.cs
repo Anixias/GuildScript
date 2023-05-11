@@ -1219,26 +1219,50 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		return new ResolvedExpression.Unary(operand, expression.Operator, expressionType, operatorMethod);
 	}
 
+	// @TODO Fix this
 	public ResolvedExpression VisitIdentifierExpression(Expression.Identifier expression)
 	{
 		var symbol = semanticModel.FindSymbol(expression.NameToken.Text);
 		if (symbol is null)
 			throw new Exception($"Failed to resolve identifier '{expression.NameToken.Text}'.");
+		
+		var type = symbol switch
+		{
+			MethodSymbol => SimpleResolvedType.Method,
+			LocalVariableSymbol localVariableSymbol => localVariableSymbol.Type,
+			ParameterSymbol parameterSymbol => parameterSymbol.Type,
+			FieldSymbol fieldSymbol => fieldSymbol.Type,
+			PropertySymbol propertySymbol => propertySymbol.Type,
+			_ => throw new Exception($"Invalid use of identifier '{expression.NameToken.Text}'.")
+		};
 
-		// @TODO
+		if (type is null)
+			throw new Exception($"Cannot reference '{expression.NameToken.Text}' before it has been resolved.");
 
-		return new ResolvedExpression.Identifier(, symbol);
+		return new ResolvedExpression.Identifier(type, symbol);
 	}
 
+	// @TODO Fix this
 	public ResolvedExpression VisitQualifierExpression(Expression.Qualifier expression)
 	{
 		var symbol = semanticModel.FindSymbol(expression.NameToken.Text);
 		if (symbol is null)
 			throw new Exception($"Failed to resolve qualifier '{expression.NameToken.Text}'.");
+		
+		var type = symbol switch
+		{
+			MethodSymbol => SimpleResolvedType.Method,
+			LocalVariableSymbol localVariableSymbol => localVariableSymbol.Type,
+			ParameterSymbol parameterSymbol => parameterSymbol.Type,
+			FieldSymbol fieldSymbol => fieldSymbol.Type,
+			PropertySymbol propertySymbol => propertySymbol.Type,
+			_ => throw new Exception($"Invalid use of qualifier '{expression.NameToken.Text}'.")
+		};
 
-		// @TODO
+		if (type is null)
+			throw new Exception($"Cannot reference '{expression.NameToken.Text}' before it has been resolved.");
 
-		return new ResolvedExpression.Qualifier(, symbol);
+		return new ResolvedExpression.Qualifier(type, symbol);
 	}
 
 	public ResolvedExpression VisitCallExpression(Expression.Call expression)
@@ -1246,6 +1270,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		return new ResolvedExpression.Call();
 	}
 
+	// @TODO
 	public ResolvedExpression VisitLiteralExpression(Expression.Literal expression)
 	{
 		return new ResolvedExpression.Literal();
@@ -1253,7 +1278,28 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedExpression VisitInstantiateExpression(Expression.Instantiate expression)
 	{
-		return new ResolvedExpression.Instantiate();
+		var type = ResolveType(expression.InstanceType);
+
+		if (type is null)
+			throw new Exception($"Failed to resolve type '{expression.InstanceType}'.");
+		
+		var arguments = new List<ResolvedExpression>();
+		foreach (var argument in expression.Arguments)
+		{
+			arguments.Add(argument.AcceptVisitor(this));
+		}
+		
+		semanticModel.VisitSymbol(type.TypeSymbol);
+		
+		var initializers = new List<ResolvedExpression>();
+		foreach (var initializer in expression.Initializers)
+		{
+			initializers.Add(initializer.AcceptVisitor(this));
+		}
+		
+		semanticModel.Return();
+		
+		return new ResolvedExpression.Instantiate(type, arguments, initializers);
 	}
 
 	public ResolvedExpression VisitCastExpression(Expression.Cast expression)
