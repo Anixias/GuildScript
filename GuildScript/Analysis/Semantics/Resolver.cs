@@ -1207,11 +1207,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		else
 		{
 			// Search for operator overloading
-			var leftOverload = left.Type.TypeSymbol.FindOperatorOverload(left.Type, expression.Operator, right.Type);
-			var rightOverload = right.Type.TypeSymbol.FindOperatorOverload(left.Type, expression.Operator, right.Type);
-
-			if (leftOverload is not null && rightOverload is not null)
-				throw new Exception("Ambiguous operator overload.");
+			var overload = operand.Type.TypeSymbol.FindOperatorOverload(operand.Type, expression.Operator);
 
 			if (leftOverload is not null)
 			{

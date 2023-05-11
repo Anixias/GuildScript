@@ -138,6 +138,7 @@ public abstract class TypeSymbol : Symbol
 	public MethodSymbol? FindOperatorOverload(ResolvedType leftType, BinaryOperator binaryOperator,
 											  ResolvedType rightType)
 	{
+		var validOverloads = new List<MethodSymbol>();
 		foreach (var member in members.Values)
 		{
 			if (member is not MethodSymbol method)
@@ -164,15 +165,21 @@ public abstract class TypeSymbol : Symbol
 				if (parameters[1].Type != rightType)
 					continue;
 
-				return overload;
+				validOverloads.Add(overload);
 			}
 		}
 
-		return null;
+		return validOverloads.Count switch
+		{
+			1   => validOverloads[0],
+			> 1 => throw new Exception("Ambiguous operator overload."),
+			_   => null
+		};
 	}
 
 	public MethodSymbol? FindOperatorOverload(ResolvedType operandType, UnaryOperator unaryOperator)
 	{
+		var validOverloads = new List<MethodSymbol>();
 		foreach (var member in members.Values)
 		{
 			if (member is not MethodSymbol method)
@@ -196,11 +203,16 @@ public abstract class TypeSymbol : Symbol
 				if (parameters[0].Type != operandType)
 					continue;
 
-				return overload;
+				validOverloads.Add(overload);
 			}
 		}
 
-		return null;
+		return validOverloads.Count switch
+		{
+			1   => validOverloads[0],
+			> 1 => throw new Exception("Ambiguous operator overload."),
+			_   => null
+		};
 	}
 }
 
