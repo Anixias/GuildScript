@@ -1143,6 +1143,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			throw new Exception("Cannot operate on void types.");
 
 		var expressionType = expression.Operator.GetResultType(left.Type, right.Type);
+		MethodSymbol? operatorMethod = null;
 		if (expressionType is null)
 		{
 			// Look for operator overloads on either type
@@ -1155,10 +1156,12 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 					throw new Exception("Ambiguous operator overload.");
 
 				expressionType = leftOverload.ReturnType;
+				operatorMethod = leftOverload;
 			}
 			else if (rightOverload is not null)
 			{
 				expressionType = rightOverload.ReturnType;
+				operatorMethod = rightOverload;
 			}
 		}
 
@@ -1166,7 +1169,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			throw new Exception(
 				$"Cannot use operator '{expression.Operator}' on types '{left.Type}' and '{right.Type}'.");
 
-		return new ResolvedExpression.Binary(left, expression.Operator, right, expressionType);
+		return new ResolvedExpression.Binary(left, expression.Operator, right, expressionType, operatorMethod);
 	}
 
 	public ResolvedExpression VisitTypeRelationExpression(Expression.TypeRelation expression)

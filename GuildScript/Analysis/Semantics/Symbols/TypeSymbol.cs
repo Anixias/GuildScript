@@ -146,20 +146,26 @@ public abstract class TypeSymbol : Symbol
 			if (!method.IsOperator)
 				continue;
 
-			var parameters = method.GetParameters().ToArray();
-			if (parameters.Length != 2)
-				continue;
-
-			if (parameters[0].Type != leftType)
-				continue;
-
-			if (parameters[1].Type != rightType)
-				continue;
-
 			if (method.Operator!.Equals(binaryOperator))
 				continue;
 
-			return method;
+			var overloadList = new List<MethodSymbol> { method };
+			overloadList.AddRange(method.GetOverloads());
+
+			foreach (var overload in overloadList)
+			{
+				var parameters = overload.GetParameters().ToArray();
+				if (parameters.Length != 2)
+					continue;
+
+				if (parameters[0].Type != leftType)
+					continue;
+
+				if (parameters[1].Type != rightType)
+					continue;
+
+				return overload;
+			}
 		}
 
 		return null;

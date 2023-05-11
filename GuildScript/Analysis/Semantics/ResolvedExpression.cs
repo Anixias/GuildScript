@@ -144,12 +144,12 @@ public abstract class ResolvedExpression : ResolvedNode
 	{
 		public override ResolvedType Type => SimpleResolvedType.Bool;
 
-		public Symbol Operand { get; }
+		public ResolvedExpression Operand { get; }
 		public BinaryOperator Operator { get; }
 		public ResolvedType? TypeQuery { get; }
 		public LocalVariableSymbol? VariableSymbol { get; }
 
-		public TypeRelation(Symbol operand, BinaryOperator @operator, ResolvedType? typeQuery,
+		public TypeRelation(ResolvedExpression operand, BinaryOperator @operator, ResolvedType? typeQuery,
 							LocalVariableSymbol? variableSymbol)
 		{
 			Operand = operand;

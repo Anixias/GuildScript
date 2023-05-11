@@ -338,20 +338,7 @@ public sealed class BinaryOperator : Operator
 	{
 		if (leftType.TypeSymbol is not NativeTypeSymbol || rightType.TypeSymbol is not NativeTypeSymbol)
 		{
-			// Search both types for operator overload
-			var leftOverload = leftType.TypeSymbol.FindOperatorOverload(leftType, this, rightType);
-
 			return null;
-		}
-
-		if (Operation == BinaryOperation.NullCoalescence)
-		{
-			if (leftType is NullableResolvedType nullableResolvedType)
-			{
-				return nullableResolvedType.BaseType;
-			}
-
-			return leftType;
 		}
 
 		if (Operation == BinaryOperation.Add)
@@ -434,7 +421,7 @@ public sealed class BinaryOperator : Operator
 				}
 
 				break;
-			case BinaryOperator.Subtract:
+			case BinaryOperation.Subtract:
 				if (leftType == SimpleResolvedType.Char)
 				{
 					if (rightType == SimpleResolvedType.Int8 ||
@@ -453,6 +440,7 @@ public sealed class BinaryOperator : Operator
 				if (leftType is NullableResolvedType leftNullableType)
 					return leftNullableType.BaseType;
 
+				// @TODO Print warning that left type is never null
 				return leftType;
 		}
 
