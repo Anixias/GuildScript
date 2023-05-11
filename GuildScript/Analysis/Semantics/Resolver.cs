@@ -99,7 +99,11 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 				break;
 			case TemplatedResolvedType templatedResolvedType:
 				var resolvedTemplateBaseType = ResolveTypeAlias(templatedResolvedType.BaseType);
-				var resolvedTemplateArguments = templatedResolvedType.TypeArguments.Select(ResolveTypeAlias).ToArray();
+				var resolvedTemplateArguments = new List<ResolvedType?>();
+				foreach (var template in templatedResolvedType.TypeArguments)
+				{
+					resolvedTemplateArguments.Add(ResolveTypeAlias(template));
+				}
 				if (!templatedResolvedType.TypeArguments.SequenceEqual(resolvedTemplateArguments))
 					return new TemplatedResolvedType(resolvedTemplateBaseType!, resolvedTemplateArguments!);
 				break;
@@ -250,31 +254,6 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		return null;
 	}
 
-	private LocalSymbol? ResolveExpressionLocalSymbol(Expression expression)
-	{
-		switch (expression)
-		{
-			case Expression.Qualifier qualifier:
-			{
-				var symbol = semanticModel.FindSymbol(qualifier.NameToken.Text);
-				if (symbol is LocalSymbol localSymbol)
-					return localSymbol;
-
-				throw new Exception($"The local variable '{qualifier.NameToken.Text}' does not exist in this context.");
-			}
-			case Expression.Identifier identifier:
-			{
-				var symbol = semanticModel.FindSymbol(identifier.NameToken.Text);
-				if (symbol is LocalSymbol localSymbol)
-					return localSymbol;
-
-				throw new Exception($"The local variable '{identifier.NameToken.Text}' does not exist in this context.");
-			}
-		}
-
-		return null;
-	}
-
 	private Symbol? ResolveExpressionValueSymbol(Expression expression)
 	{
 		switch (expression)
@@ -353,7 +332,11 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		}
 
 		semanticModel.EnterScope(statement);
-		var statements = statement.Statements.Select(topLevelStatement => topLevelStatement.AcceptVisitor(this));
+		var statements = new List<ResolvedStatement>();
+		foreach (var topLevelStatement in statement.Statements)
+		{
+			statements.Add(topLevelStatement.AcceptVisitor(this));
+		}
 		semanticModel.ExitScope();
 
 		for (var i = 0; i < statement.Module.Names.Length; i++)
@@ -411,7 +394,12 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedStatement VisitBlockStatement(Statement.Block statement)
 	{
-		var statements = statement.Statements.Select(stmt => stmt.AcceptVisitor(this));
+		var statements = new List<ResolvedStatement>();
+		foreach (var stmt in statement.Statements)
+		{
+			statements.Add(stmt.AcceptVisitor(this));
+		}
+		
 		return new ResolvedStatement.Block(statements);
 	}
 
@@ -424,7 +412,11 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.VisitSymbol(classSymbol);
 		semanticModel.EnterScope(statement);
 
-		var members = statement.Members.Select(member => member.AcceptVisitor(this));
+		var members = new List<ResolvedStatement>();
+		foreach (var member in statement.Members)
+		{
+			members.Add(member.AcceptVisitor(this));
+		}
 
 		semanticModel.ExitScope();
 		semanticModel.Return();
@@ -441,7 +433,11 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.VisitSymbol(structSymbol);
 		semanticModel.EnterScope(statement);
 
-		var members = statement.Members.Select(member => member.AcceptVisitor(this));
+		var members = new List<ResolvedStatement>();
+		foreach (var member in statement.Members)
+		{
+			members.Add(member.AcceptVisitor(this));
+		}
 
 		semanticModel.ExitScope();
 		semanticModel.Return();
@@ -459,7 +455,11 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.VisitSymbol(interfaceSymbol);
 		semanticModel.EnterScope(statement);
 
-		var members = statement.Members.Select(member => member.AcceptVisitor(this));
+		var members = new List<ResolvedStatement>();
+		foreach (var member in statement.Members)
+		{
+			members.Add(member.AcceptVisitor(this));
+		}
 
 		semanticModel.ExitScope();
 		semanticModel.Return();
@@ -480,9 +480,13 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		if (enumSymbol.BaseType is null)
 			throw new Exception($"Failed to resolve base type for enum '{statement.NameToken.Text}'.");
 
-		var members = statement.Members.Select(member => member.Expression is null
-			? new ResolvedStatement.Enum.Member(member.Identifier.Text, null)
-			: new ResolvedStatement.Enum.Member(member.Identifier.Text, member.Expression.AcceptVisitor(this)));
+		var members = new List<ResolvedStatement.Enum.Member>();
+		foreach (var member in statement.Members)
+		{
+			members.Add(member.Expression is null
+				? new ResolvedStatement.Enum.Member(member.Identifier.Text, null)
+				: new ResolvedStatement.Enum.Member(member.Identifier.Text, member.Expression.AcceptVisitor(this)));
+		}
 
 		return new ResolvedStatement.Enum(enumSymbol.AccessModifier, enumSymbol, members, enumSymbol.BaseType);
 	}
@@ -600,7 +604,12 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			indexerSymbol.ResolveParameter(parameter.Name.Text, parameterType);
 		}
 
-		var body = statement.Body.Select(bodyStatement => bodyStatement.AcceptVisitor(this));
+
+		var body = new List<ResolvedStatement>();
+		foreach (var bodyStatement in statement.Body)
+		{
+			body.Add(bodyStatement.AcceptVisitor(this));
+		}
 
 		semanticModel.ExitScope();
 		semanticModel.Return();
@@ -738,7 +747,11 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.VisitSymbol(propertySymbol);
 		semanticModel.EnterScope(statement);
 
-		var body = statement.Body.Select(bodyStatement => bodyStatement.AcceptVisitor(this));
+		var body = new List<ResolvedStatement>();
+		foreach (var bodyStatement in statement.Body)
+		{
+			body.Add(bodyStatement.AcceptVisitor(this));
+		}
 
 		semanticModel.ExitScope();
 		semanticModel.Return();
@@ -763,7 +776,11 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.VisitSymbol(propertySymbol);
 		semanticModel.EnterScope(statement);
 
-		var body = statement.Body.Select(bodyStatement => bodyStatement.AcceptVisitor(this));
+		var body = new List<ResolvedStatement>();
+		foreach (var bodyStatement in statement.Body)
+		{
+			body.Add(bodyStatement.AcceptVisitor(this));
+		}
 
 		semanticModel.ExitScope();
 		semanticModel.Return();

@@ -336,28 +336,9 @@ public sealed class BinaryOperator : Operator
 
 	public ResolvedType? GetResultType(ResolvedType leftType, ResolvedType rightType)
 	{
-		if (leftType.TypeSymbol is not NativeTypeSymbol || rightType.TypeSymbol is not NativeTypeSymbol)
+		var operation = Operation;
+		switch (operation)
 		{
-			return null;
-		}
-
-		if (Operation == BinaryOperation.Add)
-		{
-			if (leftType == SimpleResolvedType.String || rightType == SimpleResolvedType.String)
-				return SimpleResolvedType.String;
-		}
-
-		// No operations allowed on nullable types except null coalescence and string concatenation
-		if (leftType is NullableResolvedType || rightType is NullableResolvedType)
-			return null;
-
-		switch (Operation)
-		{
-			case BinaryOperation.RangeLeftExclusive:
-			case BinaryOperation.RangeLeftInclusive:
-			case BinaryOperation.RangeRightExclusive:
-			case BinaryOperation.RangeRightInclusive:
-				return SimpleResolvedType.Range;
 			case BinaryOperation.Cast:
 				return rightType;
 			case BinaryOperation.ConditionalCast:
@@ -381,6 +362,30 @@ public sealed class BinaryOperator : Operator
 			case BinaryOperation.RotateRightAssign:
 			case BinaryOperation.NullCoalescenceAssign:
 				return leftType;
+		}
+		
+		if (leftType.TypeSymbol is not NativeTypeSymbol || rightType.TypeSymbol is not NativeTypeSymbol)
+		{
+			return null;
+		}
+
+		if (operation == BinaryOperation.Add)
+		{
+			if (leftType == SimpleResolvedType.String || rightType == SimpleResolvedType.String)
+				return SimpleResolvedType.String;
+		}
+
+		// No operations allowed on nullable types except null coalescence and string concatenation
+		if (leftType is NullableResolvedType || rightType is NullableResolvedType)
+			return null;
+
+		switch (operation)
+		{
+			case BinaryOperation.RangeLeftExclusive:
+			case BinaryOperation.RangeLeftInclusive:
+			case BinaryOperation.RangeRightExclusive:
+			case BinaryOperation.RangeRightInclusive:
+				return SimpleResolvedType.Range;
 			case BinaryOperation.Equality:
 			case BinaryOperation.Inequality:
 			case BinaryOperation.LessThan:
@@ -452,7 +457,7 @@ public sealed class BinaryOperator : Operator
 			if (mapping.Right != rightType)
 				continue;
 
-			if (mapping.Operation != Operation)
+			if (mapping.Operation != operation)
 				continue;
 
 			return mapping.Result;

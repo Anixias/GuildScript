@@ -142,18 +142,6 @@ SyntaxTree? AnalyzeFile(string path, SemanticModel semanticModel)
 			
 		Console.ResetColor();
 		return null;
-
-		//nameResolver.AppendDiagnostics(parser.Diagnostics);
-		//nameResolver.Resolve(tree.Root);
-
-		//if (nameResolver.Diagnostics.Any())
-		//	return;
-
-		//var evaluator = new Evaluator();
-		//var value = evaluator.Evaluate(tree);
-
-		//if (value is not null)
-		//	Console.WriteLine($"= {value}");
 	}
 	catch (Exception e)
 	{
