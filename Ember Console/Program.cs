@@ -152,10 +152,10 @@ SyntaxTree? AnalyzeFile(string path, SemanticModel semanticModel)
 	}
 }
 
-void LinkTree(SyntaxTree tree, SemanticModel semanticModel)
+ResolvedTree? LinkTree(SyntaxTree tree, SemanticModel semanticModel)
 {
 	var resolver = new Resolver(semanticModel);
-	resolver.Resolve(tree);
+	return resolver.Resolve(tree);
 }
 
 void CompileFolder()

@@ -1355,10 +1355,8 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			templateArguments.Add(typeSymbol);
 		}
 
-		ResolvedType? resolvedType = null;
 		var methodSymbol = typedSymbol.Type?.TypeSymbol.FindMethod(argumentTypes, templateArguments);
-
-		if (resolvedType is null)
+		if (methodSymbol is null)
 			throw new Exception("Invalid call target.");
 
 		return new ResolvedExpression.Call(methodSymbol, templateArguments, arguments);
