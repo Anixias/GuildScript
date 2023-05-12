@@ -235,11 +235,11 @@ public abstract class ResolvedExpression : ResolvedNode
 	public sealed class Call : ResolvedExpression
 	{
 		public override ResolvedType? Type => Function.ReturnType;
-		public MethodSymbol Function { get; }
+		public ICallable Function { get; }
 		public ImmutableArray<TypeSymbol> TemplateArguments { get; }
 		public ImmutableArray<ResolvedExpression> Arguments { get; }
 
-		public Call(MethodSymbol function, IEnumerable<TypeSymbol> templateArguments,
+		public Call(ICallable function, IEnumerable<TypeSymbol> templateArguments,
 					IEnumerable<ResolvedExpression> arguments)
 		{
 			Function = function;

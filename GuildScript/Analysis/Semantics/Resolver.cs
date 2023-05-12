@@ -1332,8 +1332,8 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedExpression VisitCallExpression(Expression.Call expression)
 	{
-		var sourceSymbol = ResolveExpressionValueSymbol(expression.Function);
-		if (sourceSymbol is not ITypedSymbol typedSymbol)
+		var sourceSymbol = ResolveExpressionMemberSymbol(expression.Function);
+		if (sourceSymbol is not ICallable callable)
 			throw new Exception("Invalid call target.");
 
 		var argumentTypes = new List<ResolvedType?>();
@@ -1355,11 +1355,11 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			templateArguments.Add(typeSymbol);
 		}
 
-		var methodSymbol = typedSymbol.Type?.TypeSymbol.FindMethod(argumentTypes, templateArguments);
-		if (methodSymbol is null)
+		var overload = callable.FindOverload(argumentTypes, templateArguments.Count);
+		if (overload is null)
 			throw new Exception("Invalid call target.");
 
-		return new ResolvedExpression.Call(methodSymbol, templateArguments, arguments);
+		return new ResolvedExpression.Call(overload, templateArguments, arguments);
 	}
 
 	// @TODO

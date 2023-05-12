@@ -1,6 +1,6 @@
 namespace GuildScript.Analysis.Semantics.Symbols;
 
-public sealed class ExternalMethodSymbol : MemberSymbol, ITypedSymbol
+public sealed class ExternalMethodSymbol : MemberSymbol, ITypedSymbol, ICallable
 {
 	public ResolvedType Type => SimpleResolvedType.Method;
 	public ResolvedType? ReturnType { get; set; }
@@ -42,5 +42,45 @@ public sealed class ExternalMethodSymbol : MemberSymbol, ITypedSymbol
 	public IEnumerable<ExternalMethodSymbol> GetOverloads()
 	{
 		return overloads;
+	}
+	
+	public ICallable? FindOverload(List<ResolvedType?> argumentTypes, int templateCount = 0)
+	{
+		if (templateCount != 0)
+			return null;
+		
+		var validOverloads = new List<ExternalMethodSymbol>();
+		var localOverloads = new List<ExternalMethodSymbol> { this };
+		localOverloads.AddRange(overloads);
+
+		foreach (var overload in localOverloads)
+		{	
+			var overloadParameters = overload.GetParameters().ToArray();
+			if (overloadParameters.Length != argumentTypes.Count)
+				continue;
+
+			var matches = true;
+			for (var i = 0; i < overloadParameters.Length; i++)
+			{
+				var parameter = overloadParameters[i];
+				if (parameter.Type == argumentTypes[i])
+					continue;
+			
+				matches = false;
+				break;
+			}
+
+			if (!matches)
+				continue;
+
+			validOverloads.Add(overload);
+		}
+
+		return validOverloads.Count switch
+		{
+			1   => validOverloads[0],
+			> 1 => throw new Exception("Ambiguous method reference."),
+			_   => null
+		};
 	}
 }

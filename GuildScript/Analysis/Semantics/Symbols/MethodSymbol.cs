@@ -3,7 +3,7 @@ using GuildScript.Analysis.Syntax;
 
 namespace GuildScript.Analysis.Semantics.Symbols;
 
-public sealed class MethodSymbol : MemberSymbol, ITypedSymbol, ITemplateable
+public sealed class MethodSymbol : MemberSymbol, ITypedSymbol, ITemplateable, ICallable
 {
 	public ResolvedType Type => SimpleResolvedType.Method;
 	
@@ -78,5 +78,46 @@ public sealed class MethodSymbol : MemberSymbol, ITypedSymbol, ITemplateable
 	public IEnumerable<MethodSymbol> GetOverloads()
 	{
 		return overloads;
+	}
+
+	public ICallable? FindOverload(List<ResolvedType?> argumentTypes, int templateCount = 0)
+	{
+		var validOverloads = new List<MethodSymbol>();
+		var localOverloads = new List<MethodSymbol> { this };
+		localOverloads.AddRange(overloads);
+
+		foreach (var overload in localOverloads)
+		{
+			var overloadParameters = overload.GetParameters().ToArray();
+			if (overloadParameters.Length != argumentTypes.Count)
+				continue;
+		
+			var typeParameters = overload.GetTemplateParameters().ToArray();
+			if (typeParameters.Length != templateCount)
+				continue;
+
+			var matches = true;
+			for (var i = 0; i < overloadParameters.Length; i++)
+			{
+				var parameter = overloadParameters[i];
+				if (parameter.Type == argumentTypes[i])
+					continue;
+			
+				matches = false;
+				break;
+			}
+
+			if (!matches)
+				continue;
+
+			validOverloads.Add(overload);
+		}
+
+		return validOverloads.Count switch
+		{
+			1   => validOverloads[0],
+			> 1 => throw new Exception("Ambiguous method reference."),
+			_   => null
+		};
 	}
 }
