@@ -1,11 +1,10 @@
-using System.Collections.Immutable;
-
 namespace GuildScript.Analysis.Semantics.Symbols;
 
 public sealed class ClassSymbol : TypeSymbol, ITemplateable
 {
 	public ClassModifier ClassModifier { get; }
 	public ClassSymbol? BaseClass { get; }
+	public override TypeSymbol Ancestor => BaseClass is not null ? BaseClass : NativeTypeSymbol.Object;
 	private readonly List<InterfaceSymbol> interfaces = new();
 	private readonly List<TemplateParameterSymbol> templateParameterList = new();
 	private readonly Dictionary<string, TemplateParameterSymbol> templateParameters = new();
@@ -77,6 +76,6 @@ public sealed class ClassSymbol : TypeSymbol, ITemplateable
 	
 	public override Symbol? GetChild(string name)
 	{
-		return children.TryGetValue(name, out var child) ? child : BaseClass?.GetChild(name);
+		return children.TryGetValue(name, out var child) ? child : Ancestor.GetChild(name);
 	}
 }

@@ -1,4 +1,3 @@
-using System.Collections;
 using GuildScript.Analysis.Semantics.Symbols;
 using GuildScript.Analysis.Syntax;
 
@@ -220,7 +219,7 @@ public sealed class SemanticModel
 								  IEnumerable<MethodModifier> methodModifiers)
 	{
 		var symbol = new MethodSymbol(name, declaration, accessModifier, methodModifiers);
-		methodSymbols.Add(declaration.SourceNode, symbol);
+		methodSymbols.Add(declaration.SourceNode!, symbol);
 		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
@@ -408,7 +407,7 @@ public sealed class SemanticModel
 		var symbol = new LambdaSymbol("Lambda:" + Guid.NewGuid(), declaration);
 		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
-		lambdaSymbols.Add(declaration.SourceNode, symbol);
+		lambdaSymbols.Add(declaration.SourceNode!, symbol);
 		return symbol;
 	}
 
