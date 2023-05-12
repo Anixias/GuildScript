@@ -33,6 +33,7 @@ public sealed class SemanticModel
 	private readonly List<TypeSymbol> typeSymbols = new();
 	private readonly List<LambdaTypeData> lambdaTypeQueue = new();
 	private readonly Dictionary<SyntaxNode, LambdaSymbol> lambdaSymbols = new();
+	private readonly Dictionary<SyntaxNode, MethodSymbol> methodSymbols = new();
 
 	public SemanticModel()
 	{
@@ -219,6 +220,7 @@ public sealed class SemanticModel
 								  IEnumerable<MethodModifier> methodModifiers)
 	{
 		var symbol = new MethodSymbol(name, declaration, accessModifier, methodModifiers);
+		methodSymbols.Add(declaration.SourceNode, symbol);
 		symbols.Add(symbol);
 		CurrentScope?.AddSymbol(symbol);
 		switch (CurrentSymbol)
@@ -413,6 +415,11 @@ public sealed class SemanticModel
 	public LambdaSymbol? GetLambda(SyntaxNode node)
 	{
 		return lambdaSymbols.TryGetValue(node, out var lambda) ? lambda : null;
+	}
+
+	public MethodSymbol? GetMethod(SyntaxNode node)
+	{
+		return methodSymbols.TryGetValue(node, out var method) ? method : null;
 	}
 
 	public IndexerSymbol AddIndexer(string name, Declaration declaration, AccessModifier accessModifier)

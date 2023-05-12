@@ -23,7 +23,7 @@ public abstract class Symbol
 		return true;
 	}
 
-	public Symbol? GetChild(string name)
+	public virtual Symbol? GetChild(string name)
 	{
 		return children.TryGetValue(name, out var child) ? child : null;
 	}

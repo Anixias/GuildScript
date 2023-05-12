@@ -791,14 +791,12 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedStatement VisitMethodStatement(Statement.Method statement)
 	{
-		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
-		if (symbol is not MethodSymbol methodSymbol)
+		var methodSymbol = semanticModel.GetMethod(statement);
+		if (methodSymbol is null)
 			throw new Exception($"Failed to find method symbol '{statement.NameToken.Text}'.");
-
 
 		var returnType = statement.ReturnType is null ? null : ResolveType(statement.ReturnType);
 
-		semanticModel.VisitSymbol(methodSymbol);
 		semanticModel.EnterScope(statement);
 
 		foreach (var parameter in statement.ParameterList)
@@ -813,7 +811,6 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var body = statement.Body.AcceptVisitor(this);
 
 		semanticModel.ExitScope();
-		semanticModel.Return();
 
 		methodSymbol.Resolved = true;
 		return new ResolvedStatement.Method(methodSymbol.AccessModifier, methodSymbol.Modifiers, returnType,
@@ -823,14 +820,13 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedStatement VisitMethodSignatureStatement(Statement.MethodSignature statement)
 	{
-		var symbol = semanticModel.FindSymbol(statement.NameToken.Text);
-		if (symbol is not MethodSymbol methodSymbol)
+		var methodSymbol = semanticModel.GetMethod(statement);
+		if (methodSymbol is null)
 			throw new Exception($"Failed to find method symbol '{statement.NameToken.Text}'.");
 
 
 		var returnType = statement.ReturnType is null ? null : ResolveType(statement.ReturnType);
 
-		semanticModel.VisitSymbol(methodSymbol);
 		semanticModel.EnterScope(statement);
 
 		foreach (var parameter in statement.ParameterList)
@@ -843,7 +839,6 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		}
 
 		semanticModel.ExitScope();
-		semanticModel.Return();
 
 		methodSymbol.Resolved = true;
 		return new ResolvedStatement.MethodSignature(methodSymbol.Modifiers, returnType, methodSymbol,
@@ -1332,7 +1327,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedExpression VisitCallExpression(Expression.Call expression)
 	{
-		var sourceSymbol = ResolveExpressionMemberSymbol(expression.Function);
+		var sourceSymbol = ResolveExpressionValueSymbol(expression.Function);
 		if (sourceSymbol is not ICallable callable)
 			throw new Exception("Invalid call target.");
 

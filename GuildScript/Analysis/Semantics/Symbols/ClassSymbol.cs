@@ -74,4 +74,9 @@ public sealed class ClassSymbol : TypeSymbol, ITemplateable
 	{
 		return templateParameterList;
 	}
+	
+	public override Symbol? GetChild(string name)
+	{
+		return children.TryGetValue(name, out var child) ? child : BaseClass?.GetChild(name);
+	}
 }
