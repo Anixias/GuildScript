@@ -1033,13 +1033,8 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var type = statement.Type is null ? null : ResolveType(statement.Type);
 		var initializer = statement.Initializer?.AcceptVisitor(this);
 
-		if (type is null)
-		{
-			if (initializer is null)
-				throw new Exception($"Cannot infer type for variable '{statement.Identifier.Text}'.");
-
-			type = initializer.Type;
-		}
+		type ??= initializer?.Type ??
+				 throw new Exception($"Cannot infer type for variable '{statement.Identifier.Text}'.");
 
 		localVariableSymbol.Type = type;
 		localVariableSymbol.Resolved = true;
