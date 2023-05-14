@@ -100,7 +100,9 @@ public sealed class MethodSymbol : MemberSymbol, ITypedSymbol, ITemplateable, IC
 			for (var i = 0; i < overloadParameters.Length; i++)
 			{
 				var parameter = overloadParameters[i];
-				if (parameter.Type == argumentTypes[i])
+				var argumentType = argumentTypes[i];
+				if (parameter.Type?.GetType() == argumentType?.GetType() &&
+					parameter.Type?.TypeSymbol == argumentType?.TypeSymbol) 
 					continue;
 			
 				matches = false;

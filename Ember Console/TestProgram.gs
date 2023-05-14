@@ -67,7 +67,7 @@ entry Integer[] Main(int arg1, string arg2, Player arg3)
 		{
 			case ("north")
 			{
-				if (player.CurrentRoom == room1)
+				if (player.currentRoom == room1)
 				{
 					player.MoveTo(room2);
 				}
@@ -78,13 +78,14 @@ entry Integer[] Main(int arg1, string arg2, Player arg3)
 			}
 			case ("south")
 			{
-				if (player.CurrentRoom == room2)
+				if (player.currentRoom == room2)
 				{
 					player.MoveTo(room1);
 				}
 				else
 				{
-					Console.WriteLine("You cannot go south.");
+				    var console = new Console();
+					console.WriteLine("You cannot go south.");
 				}
 			}
 			case ("quit")

@@ -3,13 +3,14 @@ namespace GuildScript.Analysis.Semantics.Symbols;
 public sealed class NativeMethodSymbol : MemberSymbol, ITypedSymbol, ICallable
 {
 	public ResolvedType Type => SimpleResolvedType.Method;
-	public ResolvedType? ReturnType { get; init; }
+	public ResolvedType? ReturnType { get; }
 	
 	private readonly Dictionary<string, ParameterSymbol> parameters = new();
 	private readonly List<NativeMethodSymbol> overloads = new();
 
-	public NativeMethodSymbol(string name) : base(name, Declaration.Empty, AccessModifier.Public)
+	public NativeMethodSymbol(string name, ResolvedType? returnType) : base(name, Declaration.Empty, AccessModifier.Public)
 	{
+		ReturnType = returnType;
 	}
 
 	public ParameterSymbol AddParameter(string name, Declaration declaration, bool isReference)

@@ -569,6 +569,7 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 		semanticModel.EnterScope(statement);
 
 		statement.IfStatement.AcceptVisitor(this);
+		statement.IfExpression.AcceptVisitor(this);
 		statement.ElseStatement?.AcceptVisitor(this);
 
 		semanticModel.ExitScope();
@@ -682,6 +683,7 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 						new Declaration(patternLabel.Identifier, statement), patternLabel.Type);
 				}
 
+				section.Body.AcceptVisitor(this);
 				semanticModel.ExitScope();
 			}
 

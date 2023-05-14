@@ -15,4 +15,12 @@ public struct Vector2
     {
         return new Vector2(left.x + right.x, left.y + right.y);
     }
+    
+    private Vector2 Test()
+    {
+        var a = new Vector2(1.0, 2.0);
+        var b = new Vector2(-2.4, 3.14);
+        
+        return a + b;
+    }
 }

@@ -4,10 +4,8 @@ public sealed class NativeTypeSymbol : TypeSymbol
 {
 	public override TypeSymbol? Ancestor => this == Object ? null : Object;
 	
-	private NativeTypeSymbol(string name, params MemberSymbol[] members) : base(name, AccessModifier.Public)
+	private NativeTypeSymbol(string name) : base(name, AccessModifier.Public)
 	{
-		foreach (var member in members)
-			AddMember(member);
 	}
 
 	public static readonly NativeTypeSymbol Int8 = new("int8");
@@ -22,14 +20,15 @@ public sealed class NativeTypeSymbol : TypeSymbol
 	public static readonly NativeTypeSymbol Double = new("double");
 	public static readonly NativeTypeSymbol Char = new("char");
 	public static readonly NativeTypeSymbol Bool = new("bool");
-	
-	public static readonly NativeTypeSymbol Object = new("object", new NativeMethodSymbol("ToString")
-	{
-		ReturnType = null
-	});
-	
 	public static readonly NativeTypeSymbol String = new("string");
 	public static readonly NativeTypeSymbol Range = new("range");
 	public static readonly NativeTypeSymbol Method = new("method");
 	public static readonly NativeTypeSymbol Event = new("event");
+
+	public static readonly NativeTypeSymbol Object = new("object");
+
+	public static void Initialize()
+	{
+		Object.AddMember(new NativeMethodSymbol("ToString", SimpleResolvedType.String));
+	}
 }

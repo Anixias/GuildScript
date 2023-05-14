@@ -213,13 +213,13 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		return null;
 	}
 
-	private MemberSymbol? ResolveExpressionMemberSymbol(Expression expression)
+	private MemberSymbol? ResolveExpressionMemberSymbol(Symbol? owner, Expression expression)
 	{
 		switch (expression)
 		{
 			case Expression.Qualifier qualifier:
 			{
-				var symbol = semanticModel.FindSymbol(qualifier.NameToken.Text);
+				var symbol = owner?.GetChild(qualifier.NameToken.Text);
 				if (symbol is MemberSymbol memberSymbol)
 					return memberSymbol;
 
@@ -227,7 +227,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			}
 			case Expression.Identifier identifier:
 			{
-				var symbol = semanticModel.FindSymbol(identifier.NameToken.Text);
+				var symbol = owner?.GetChild(identifier.NameToken.Text);
 				if (symbol is MemberSymbol memberSymbol)
 					return memberSymbol;
 
@@ -240,11 +240,12 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 					operation != BinaryOperator.BinaryOperation.ConditionalAccess)
 					throw new Exception($"Invalid operator for member resolution: {binary.Operator}");
 
-				var left = ResolveExpressionMemberSymbol(binary.Left);
+				var left = ResolveExpressionValueSymbol(binary.Left);
 				if (left is null)
-					throw new Exception($"'{binary.Left}' is not a valid member.");
+					throw new Exception($"'{binary.Left}' is not a valid access target.");
+				
 				semanticModel.VisitSymbol(left);
-				var right = ResolveExpressionMemberSymbol(binary.Right);
+				var right = ResolveExpressionMemberSymbol(left, binary.Right);
 				semanticModel.Return();
 
 				return right;
@@ -269,6 +270,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 				{
 					MemberSymbol memberSymbol => memberSymbol,
 					LocalSymbol localSymbol => localSymbol,
+					TypeSymbol typeSymbol => typeSymbol,
 					_ => throw new Exception($"The symbol '{qualifier.NameToken.Text}' is not valid in this context.")
 				};
 			}
@@ -283,6 +285,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 				{
 					MemberSymbol memberSymbol => memberSymbol,
 					LocalSymbol localSymbol => localSymbol,
+					TypeSymbol typeSymbol => typeSymbol,
 					_ => throw new Exception($"The symbol '{identifier.NameToken.Text}' is not valid in this context.")
 				};
 			}
@@ -298,7 +301,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 					throw new Exception($"The symbol '{binary.Left}' does not exist in this context.");
 				
 				semanticModel.VisitSymbol(left);
-				var right = ResolveExpressionMemberSymbol(binary.Right);
+				var right = ResolveExpressionMemberSymbol(left, binary.Right);
 				semanticModel.Return();
 
 				return right;
@@ -332,6 +335,17 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		}
 
 		semanticModel.EnterScope(statement);
+		
+		// Process imported modules
+		foreach (var importedModule in statement.ImportedModules)
+		{
+			var importedModuleSymbol = semanticModel.GetModule(importedModule);
+			if (importedModuleSymbol is null)
+				throw new Exception($"The module '{importedModule}' does not exist.");
+
+			semanticModel.CurrentScope?.ImportModule(importedModuleSymbol);
+		}
+		
 		var statements = new List<ResolvedStatement>();
 		foreach (var topLevelStatement in statement.Statements)
 		{
@@ -394,11 +408,15 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedStatement VisitBlockStatement(Statement.Block statement)
 	{
+		semanticModel.EnterScope(statement);
+		
 		var statements = new List<ResolvedStatement>();
 		foreach (var stmt in statement.Statements)
 		{
 			statements.Add(stmt.AcceptVisitor(this));
 		}
+		
+		semanticModel.ExitScope();
 		
 		return new ResolvedStatement.Block(statements);
 	}
@@ -756,6 +774,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.ExitScope();
 		semanticModel.Return();
 
+		propertySymbol.Type = type;
 		propertySymbol.Resolved = true;
 		return new ResolvedStatement.Property(propertySymbol.AccessModifier, propertySymbol.Modifiers, type,
 			propertySymbol, body);
@@ -813,6 +832,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.ExitScope();
 
 		methodSymbol.Resolved = true;
+		methodSymbol.ReturnType = returnType;
 		return new ResolvedStatement.Method(methodSymbol.AccessModifier, methodSymbol.Modifiers, returnType,
 			methodSymbol, body, methodSymbol.GetParameters(), statement.AsyncToken is not null,
 			methodSymbol.GetTemplateParameters());
@@ -1008,7 +1028,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 	{
 		var symbol = semanticModel.FindSymbol(statement.Identifier.Text);
 		if (symbol is not LocalVariableSymbol localVariableSymbol)
-			throw new Exception($"Failed to resolved local variable '{statement.Identifier.Text}'.");
+			throw new Exception($"Failed to resolve local variable '{statement.Identifier.Text}'.");
 
 		var type = statement.Type is null ? null : ResolveType(statement.Type);
 		var initializer = statement.Initializer?.AcceptVisitor(this);
@@ -1031,7 +1051,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 	{
 		semanticModel.EnterScope(statement);
 
-		var symbol = ResolveExpressionMemberSymbol(statement.Expression);
+		var symbol = ResolveExpressionValueSymbol(statement.Expression);
 		if (symbol is not FieldSymbol fieldSymbol)
 			throw new Exception("Invalid lock target.");
 
@@ -1213,9 +1233,21 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 	public ResolvedExpression VisitBinaryExpression(Expression.Binary expression)
 	{
 		var left = expression.Left.AcceptVisitor(this);
-		var right = expression.Right.AcceptVisitor(this);
 
-		if (left.Type is null || right.Type is null)
+		if (left.Type is null)
+			throw new Exception("Cannot operate on void types.");
+
+		if (expression.Operator.Operation is BinaryOperator.BinaryOperation.Access
+			or BinaryOperator.BinaryOperation.ConditionalAccess)
+		{
+			semanticModel.VisitSymbol(left.Type.TypeSymbol);
+			var resolvedRight = expression.Right.AcceptVisitor(this);
+			semanticModel.Return();
+			return resolvedRight;
+		}
+
+		var right = expression.Right.AcceptVisitor(this);
+		if (right.Type is null)
 			throw new Exception("Cannot operate on void types.");
 
 		var expressionType = expression.Operator.GetResultType(left.Type, right.Type);
@@ -1239,6 +1271,12 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 				expressionType = rightOverload.ReturnType;
 				operatorMethod = rightOverload;
 			}
+		}
+
+		if (expression.Operator.Operation is BinaryOperator.BinaryOperation.Equality
+			or BinaryOperator.BinaryOperation.Inequality)
+		{
+			expressionType = SimpleResolvedType.Bool;
 		}
 
 		if (expressionType is null)

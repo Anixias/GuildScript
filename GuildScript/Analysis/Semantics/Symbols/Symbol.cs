@@ -25,6 +25,13 @@ public abstract class Symbol
 
 	public virtual Symbol? GetChild(string name)
 	{
-		return children.TryGetValue(name, out var child) ? child : null;
+		if (this is ITypedSymbol typedSymbol)
+		{
+			return children.TryGetValue(name, out var child) ? child : typedSymbol.Type?.TypeSymbol.GetChild(name); 
+		}
+		else
+		{
+			return children.TryGetValue(name, out var child) ? child : null;
+		}
 	}
 }

@@ -1,4 +1,5 @@
 ﻿using EmberConsole;
+using GuildScript;
 using GuildScript.Analysis;
 using GuildScript.Analysis.Semantics;
 using GuildScript.Analysis.Syntax;
@@ -9,6 +10,8 @@ if (args.Length == 0)
 	ShowPrompt();
 	return;
 }
+
+Compiler.Initialize();
 
 var position = 0;
 var arguments = new Dictionary<string, Action>
@@ -183,22 +186,18 @@ void CompileFolder()
 		Console.ResetColor();
 	}
 
+	var resolvedTrees = new List<ResolvedTree>();
+
 	foreach (var tree in trees)
 	{
-		LinkTree(tree, semanticModel);
+		if (LinkTree(tree, semanticModel) is { } resolvedTree)
+			resolvedTrees.Add(resolvedTree);
 	}
 
 	var resolver = new Resolver(semanticModel);
 	resolver.ReplaceAliases();
-
-	/*nameResolver.Finish();
 	
-	Console.ForegroundColor = ConsoleColor.DarkRed;
-	foreach (var diagnostic in nameResolver.Diagnostics)
-	{
-		Console.WriteLine(diagnostic);
-	}
-	Console.ResetColor();*/
+	
 }
 
 /*

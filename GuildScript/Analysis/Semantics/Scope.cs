@@ -6,6 +6,7 @@ public sealed class Scope
 {
 	public Scope? Parent { get; }
 	public List<Symbol> Symbols { get; } = new();
+	public List<ModuleSymbol> Imports { get; } = new();
 	
 	public Scope(Scope? parent)
 	{
@@ -25,6 +26,23 @@ public sealed class Scope
 				return symbol;
 		}
 
-		return Parent?.FindSymbol(name);
+		if (Parent?.FindSymbol(name) is { } parentSymbol)
+			return parentSymbol;
+
+		foreach (var import in Imports)
+		{
+			foreach (var importedChild in import.Children)
+			{
+				if (importedChild.Name == name)
+					return importedChild;
+			}
+		}
+
+		return null;
+	}
+
+	public void ImportModule(ModuleSymbol importedModuleSymbol)
+	{
+		Imports.Add(importedModuleSymbol);
 	}
 }

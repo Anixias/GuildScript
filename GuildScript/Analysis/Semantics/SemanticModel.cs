@@ -24,7 +24,7 @@ public sealed class SemanticModel
 	private readonly List<Symbol> symbols = new();
 	private List<MethodSymbol> EntryPoints { get; } = new();
 	public Symbol? CurrentSymbol => symbolStack.TryPeek(out var symbol) ? symbol : null;
-	private Scope? CurrentScope => scopeStack.TryPeek(out var scope) ? scope : null;
+	public Scope? CurrentScope => scopeStack.TryPeek(out var scope) ? scope : null;
 	private readonly Stack<Symbol> symbolStack = new();
 	private readonly Stack<Scope> scopeStack = new();
 	private readonly Dictionary<string, ModuleSymbol> globalModules = new();
@@ -94,6 +94,30 @@ public sealed class SemanticModel
 				: moduleSymbol.CreateModule(name);
 
 		return globalModules.TryGetValue(name, out var existingModule) ? existingModule : null;
+	}
+
+	public ModuleSymbol? GetModule(ModuleName name)
+	{
+		if (name.Names.Length <= 0)
+			return null;
+
+		if (!globalModules.TryGetValue(name.Names[0], out var globalModule))
+			return null;
+		
+		var module = globalModule;
+		for (var i = 1; i < name.Names.Length; i++)
+		{
+			try
+			{
+				module = module.GetModule(name.Names[i]);
+			}
+			catch
+			{
+				return null;
+			}
+		}
+
+		return module;
 	}
 
 	public ClassSymbol AddClass(string name, Declaration declaration, ClassModifier classModifier,

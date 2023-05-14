@@ -37,4 +37,9 @@ public sealed class StructSymbol : TypeSymbol, ITemplateable
 	{
 		return templateParameterList;
 	}
+	
+	public override Symbol? GetChild(string name)
+	{
+		return children.TryGetValue(name, out var child) ? child : Ancestor?.GetChild(name);
+	}
 }
