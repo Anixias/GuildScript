@@ -306,7 +306,7 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 		{
 			var accessModifier = GetAccessModifier(statement.AccessModifier, AccessModifier.Private);
 			var declaration = new Declaration(statement.ThisToken, statement);
-			var indexerSymbol = semanticModel.AddIndexer(statement.ThisToken.Text, declaration, accessModifier);
+			var indexerSymbol = semanticModel.AddIndexer(statement.ThisToken.Text + "[]", declaration, accessModifier);
 
 			semanticModel.EnterScope(statement);
 			foreach (var parameter in statement.ParameterList)

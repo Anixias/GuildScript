@@ -186,6 +186,9 @@ void CompileFolder()
 		Console.ResetColor();
 	}
 
+	var resolver = new Resolver(semanticModel);
+	resolver.ReplaceAliases();
+
 	var resolvedTrees = new List<ResolvedTree>();
 
 	foreach (var tree in trees)
@@ -193,9 +196,6 @@ void CompileFolder()
 		if (LinkTree(tree, semanticModel) is { } resolvedTree)
 			resolvedTrees.Add(resolvedTree);
 	}
-
-	var resolver = new Resolver(semanticModel);
-	resolver.ReplaceAliases();
 	
 	
 }

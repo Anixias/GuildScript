@@ -23,9 +23,11 @@ public sealed class SemanticModel
 
 	private readonly List<Symbol> symbols = new();
 	private List<MethodSymbol> EntryPoints { get; } = new();
+	private TypeSymbol? CurrentType => typeSymbolStack.TryPeek(out var symbol) ? symbol : null;
 	public Symbol? CurrentSymbol => symbolStack.TryPeek(out var symbol) ? symbol : null;
 	public Scope? CurrentScope => scopeStack.TryPeek(out var scope) ? scope : null;
 	private readonly Stack<Symbol> symbolStack = new();
+	private readonly Stack<TypeSymbol> typeSymbolStack = new();
 	private readonly Stack<Scope> scopeStack = new();
 	private readonly Dictionary<string, ModuleSymbol> globalModules = new();
 	private readonly Dictionary<SyntaxNode, Scope> scopes = new();
@@ -384,10 +386,15 @@ public sealed class SemanticModel
 	public void VisitSymbol(Symbol symbol)
 	{
 		symbolStack.Push(symbol);
+		if (symbol is TypeSymbol typeSymbol)
+			typeSymbolStack.Push(typeSymbol);
 	}
 
 	public void Return()
 	{
+		if (CurrentSymbol == CurrentType)
+			typeSymbolStack.Pop();
+		
 		symbolStack.Pop();
 	}
 
@@ -404,10 +411,18 @@ public sealed class SemanticModel
 
 	public Symbol? FindSymbol(string name)
 	{
-		if (CurrentScope?.FindSymbol(name) is { } symbol)
+		switch (name)
+		{
+			case "this":
+				return CurrentType;
+			case "base":
+				return CurrentType?.Ancestor;
+		}
+
+		if (CurrentSymbol?.GetChild(name) is { } symbol)
 			return symbol;
 
-		return CurrentSymbol?.GetChild(name);
+		return CurrentScope?.FindSymbol(name);
 	}
 
 	public MethodSymbol GetEntryPoint()

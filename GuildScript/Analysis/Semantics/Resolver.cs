@@ -602,7 +602,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedStatement VisitIndexerStatement(Statement.Indexer statement)
 	{
-		var symbol = semanticModel.FindSymbol("this");
+		var symbol = semanticModel.FindSymbol("this[]");
 		if (symbol is not IndexerSymbol indexerSymbol)
 			throw new Exception("Failed to find indexer.");
 
@@ -1150,23 +1150,22 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			throw new Exception("Failed to resolve operator overload.");
 
 		semanticModel.EnterScope(statement);
+		
 		foreach (var parameter in statement.ParameterList)
 		{
-			var parameterDeclaration = new Declaration(parameter.Name, statement);
-			semanticModel.AddSymbol(methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
-				parameter.IsReference));
-
 			var parameterType = ResolveType(parameter.Type);
 			if (parameterType is null)
-				throw new Exception($"Failed to resolve type '{parameter.Type}'.");
+				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
 
 			methodSymbol.ResolveParameter(parameter.Name.Text, parameterType);
 		}
 
 		var body = statement.Body.AcceptVisitor(this);
+		
 		semanticModel.ExitScope();
 
 		methodSymbol.Resolved = true;
+		methodSymbol.ReturnType = returnType;
 		var operatorSymbol = ResolveOperator(statement.Operator.TokenSpan.ToString());
 		if (operatorSymbol is null)
 			throw new Exception($"Failed to resolve operator '{statement.Operator.TokenSpan}'.");
@@ -1193,15 +1192,12 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			throw new Exception("Failed to resolve operator overload.");
 
 		semanticModel.EnterScope(statement);
+		
 		foreach (var parameter in statement.ParameterList)
 		{
-			var parameterDeclaration = new Declaration(parameter.Name, statement);
-			semanticModel.AddSymbol(methodSymbol.AddParameter(parameter.Name.Text, parameterDeclaration,
-				parameter.IsReference));
-
 			var parameterType = ResolveType(parameter.Type);
 			if (parameterType is null)
-				throw new Exception($"Failed to resolve type '{parameter.Type}'.");
+				throw new Exception($"Failed to resolve type of parameter '{parameter.Name.Text}'.");
 
 			methodSymbol.ResolveParameter(parameter.Name.Text, parameterType);
 		}
@@ -1209,6 +1205,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.ExitScope();
 
 		methodSymbol.Resolved = true;
+		methodSymbol.ReturnType = returnType;
 		var operatorSymbol = ResolveOperator(statement.Operator.TokenSpan.ToString());
 		if (operatorSymbol is null)
 			throw new Exception($"Failed to resolve operator '{statement.Operator.TokenSpan}'.");
@@ -1256,7 +1253,9 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		{
 			// Look for operator overloads on either type
 			var leftOverload = left.Type.TypeSymbol.FindOperatorOverload(left.Type, expression.Operator, right.Type);
-			var rightOverload = right.Type.TypeSymbol.FindOperatorOverload(left.Type, expression.Operator, right.Type);
+			var rightOverload = left.Type.Equals(right.Type)
+				? null
+				: right.Type.TypeSymbol.FindOperatorOverload(left.Type, expression.Operator, right.Type);
 
 			if (leftOverload is not null)
 			{
@@ -1273,7 +1272,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 			}
 		}
 
-		if (expression.Operator.Operation is BinaryOperator.BinaryOperation.Equality
+		if (expressionType is null && expression.Operator.Operation is BinaryOperator.BinaryOperation.Equality
 			or BinaryOperator.BinaryOperation.Inequality)
 		{
 			expressionType = SimpleResolvedType.Bool;
@@ -1337,30 +1336,44 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 	public ResolvedExpression VisitIdentifierExpression(Expression.Identifier expression)
 	{
 		var symbol = semanticModel.FindSymbol(expression.NameToken.Text);
-		if (symbol is null)
-			throw new Exception($"Failed to resolve identifier '{expression.NameToken.Text}'.");
+		switch (symbol)
+		{
+			case null:
+				throw new Exception($"Failed to resolve identifier '{expression.NameToken.Text}'.");
+			case ITypedSymbol typedSymbol:
+			{
+				if (!typedSymbol.Resolved || typedSymbol.Type is not { } type)
+					throw new Exception($"Cannot reference '{expression.NameToken.Text}' before it has been resolved.");
 
-		var type = symbol is ITypedSymbol typedSymbol ? typedSymbol.Type : null;
-
-		if (type is null)
-			throw new Exception($"Cannot reference '{expression.NameToken.Text}' before it has been resolved.");
-
-		return new ResolvedExpression.Identifier(type, symbol);
+				return new ResolvedExpression.Identifier(type, symbol);
+			}
+			case TypeSymbol typeSymbol:
+				return new ResolvedExpression.Identifier(new SimpleResolvedType(typeSymbol), symbol);
+			default:
+				throw new Exception($"'{expression.NameToken.Text}' is not a valid access target.");
+		}
 	}
 
 	// @TODO Fix this
 	public ResolvedExpression VisitQualifierExpression(Expression.Qualifier expression)
 	{
 		var symbol = semanticModel.FindSymbol(expression.NameToken.Text);
-		if (symbol is null)
-			throw new Exception($"Failed to resolve qualifier '{expression.NameToken.Text}'.");
+		switch (symbol)
+		{
+			case null:
+				throw new Exception($"Failed to resolve qualifier '{expression.NameToken.Text}'.");
+			case ITypedSymbol typedSymbol:
+			{
+				if (!typedSymbol.Resolved || typedSymbol.Type is not { } type)
+					throw new Exception($"Cannot reference '{expression.NameToken.Text}' before it has been resolved.");
 
-		var type = symbol is ITypedSymbol typedSymbol ? typedSymbol.Type : null;
-
-		if (type is null)
-			throw new Exception($"Cannot reference '{expression.NameToken.Text}' before it has been resolved.");
-
-		return new ResolvedExpression.Qualifier(type, symbol);
+				return new ResolvedExpression.Qualifier(type, symbol);
+			}
+			case TypeSymbol typeSymbol:
+				return new ResolvedExpression.Qualifier(new SimpleResolvedType(typeSymbol), symbol);
+			default:
+				throw new Exception($"'{expression.NameToken.Text}' is not a valid access target.");
+		}
 	}
 
 	public ResolvedExpression VisitCallExpression(Expression.Call expression)

@@ -20,6 +20,25 @@ public sealed class NullableResolvedType : ResolvedType
 	{
 		BaseType = baseType;
 	}
+
+	public override bool Equals(object? obj)
+	{
+		if (obj is NullableResolvedType nullableResolvedType)
+			return Equals(nullableResolvedType);
+
+		return false;
+	}
+
+	public override int GetHashCode()
+	{
+		const int nullableMask = 0x7F4391A2;
+		return BaseType.GetHashCode() ^ nullableMask;
+	}
+
+	private bool Equals(NullableResolvedType nullableResolvedType)
+	{
+		return BaseType.Equals(nullableResolvedType.BaseType);
+	}
 }
 
 public sealed class ArrayResolvedType : ResolvedType
@@ -29,6 +48,25 @@ public sealed class ArrayResolvedType : ResolvedType
 	public ArrayResolvedType(ResolvedType elementType) : base(elementType.TypeSymbol)
 	{
 		ElementType = elementType;
+	}
+
+	public override bool Equals(object? obj)
+	{
+		if (obj is ArrayResolvedType arrayResolvedType)
+			return Equals(arrayResolvedType);
+
+		return false;
+	}
+
+	public override int GetHashCode()
+	{
+		const int arrayMask = 0x163CBB9D;
+		return ElementType.GetHashCode() ^ arrayMask;
+	}
+
+	private bool Equals(ArrayResolvedType arrayResolvedType)
+	{
+		return ElementType.Equals(arrayResolvedType.ElementType);
 	}
 }
 
@@ -42,12 +80,74 @@ public sealed class TemplatedResolvedType : ResolvedType
 		BaseType = baseType;
 		TypeArguments = typeArguments;
 	}
+
+	public override bool Equals(object? obj)
+	{
+		if (obj is TemplatedResolvedType templatedResolvedType)
+			return Equals(templatedResolvedType);
+
+		return false;
+	}
+
+	public override int GetHashCode()
+	{
+		const int templateMask = 0x332A7AFD;
+		var mask = BaseType.GetHashCode() ^ templateMask;
+
+		var index = 1;
+		foreach (var template in TypeArguments)
+		{
+			mask ^= template.GetHashCode() << index++;
+		}
+		
+		return mask;
+	}
+
+	private bool Equals(TemplatedResolvedType templatedResolvedType)
+	{
+		if (TypeArguments.Count != templatedResolvedType.TypeArguments.Count)
+			return false;
+		
+		if (!BaseType.Equals(templatedResolvedType.BaseType))
+			return false;
+		
+		for (var i = 0; i < TypeArguments.Count; i++)
+		{
+			if (!TypeArguments[i].Equals(templatedResolvedType.TypeArguments[i]))
+				return false;
+		}
+
+		return true;
+	}
 }
 
 public sealed class SimpleResolvedType : ResolvedType
 {
 	public SimpleResolvedType(TypeSymbol typeSymbol) : base(typeSymbol)
 	{
+	}
+
+	public override string ToString()
+	{
+		return TypeSymbol.Name;
+	}
+
+	public override bool Equals(object? obj)
+	{
+		if (obj is SimpleResolvedType simpleResolvedType)
+			return Equals(simpleResolvedType);
+
+		return false;
+	}
+
+	public override int GetHashCode()
+	{
+		return TypeSymbol.GetHashCode();
+	}
+
+	private bool Equals(SimpleResolvedType simpleResolvedType)
+	{
+		return TypeSymbol == simpleResolvedType.TypeSymbol;
 	}
 
 	public static readonly SimpleResolvedType Int8 = new(NativeTypeSymbol.Int8);

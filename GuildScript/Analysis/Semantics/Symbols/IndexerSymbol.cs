@@ -3,7 +3,6 @@ namespace GuildScript.Analysis.Semantics.Symbols;
 public sealed class IndexerSymbol : MemberSymbol
 {
 	public ResolvedType? Type { get; set; }
-	public bool Resolved { get; set; }
 	private readonly Dictionary<string, ParameterSymbol> parameters = new();
 	private readonly List<IndexerSymbol> overloads = new();
 	

@@ -148,7 +148,7 @@ public abstract class TypeSymbol : Symbol
 			if (!method.IsOperator)
 				continue;
 
-			if (method.Operator!.Equals(binaryOperator))
+			if (!method.Operator!.Equals(binaryOperator))
 				continue;
 
 			var overloadList = new List<MethodSymbol> { method };
@@ -160,10 +160,10 @@ public abstract class TypeSymbol : Symbol
 				if (parameters.Length != 2)
 					continue;
 
-				if (parameters[0].Type != leftType)
+				if (parameters[0].Type?.Equals(leftType) != true)
 					continue;
 
-				if (parameters[1].Type != rightType)
+				if (parameters[1].Type?.Equals(rightType) != true)
 					continue;
 
 				validOverloads.Add(overload);

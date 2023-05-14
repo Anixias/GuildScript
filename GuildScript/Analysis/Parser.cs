@@ -924,7 +924,9 @@ public sealed class Parser
 			SyntaxTokenType.Bool,
 			SyntaxTokenType.Char,
 			SyntaxTokenType.Object,
-			SyntaxTokenType.Identifier);
+			SyntaxTokenType.Identifier,
+			SyntaxTokenType.This,
+			SyntaxTokenType.Base);
 	}
 
 	private Statement ParseStatement()
@@ -1827,8 +1829,7 @@ public sealed class Parser
 	private Expression ParsePrimaryExpression()
 	{
 		if (Match(out var constantToken, SyntaxTokenType.Int64Constant, SyntaxTokenType.DoubleConstant,
-				SyntaxTokenType.StringConstant, SyntaxTokenType.True, SyntaxTokenType.False, SyntaxTokenType.Null,
-				SyntaxTokenType.This, SyntaxTokenType.Base))
+				SyntaxTokenType.StringConstant, SyntaxTokenType.True, SyntaxTokenType.False, SyntaxTokenType.Null))
 		{
 			return new Expression.Literal(constantToken);
 		}
