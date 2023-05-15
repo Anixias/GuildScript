@@ -44,8 +44,13 @@ public sealed class NativeMethodSymbol : MemberSymbol, ITypedSymbol, ICallable
 	{
 		return overloads;
 	}
+
+	public ICallable? FindOverload(List<ResolvedType?> argumentTypes)
+	{
+		return FindOverload(argumentTypes, 0);
+	}
 	
-	public ICallable? FindOverload(List<ResolvedType?> argumentTypes, int templateCount = 0)
+	public ICallable? FindOverload(List<ResolvedType?> argumentTypes, int templateCount)
 	{
 		if (templateCount != 0)
 			return null;

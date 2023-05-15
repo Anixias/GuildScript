@@ -88,15 +88,13 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class EntryPoint : ResolvedStatement
 	{
-		public ResolvedType? ReturnType { get; }
+		public ResolvedType? ReturnType => MethodSymbol.ReturnType;
 		public MethodSymbol MethodSymbol { get; }
 		public ImmutableArray<ParameterSymbol> ParameterList { get; }
 		public ResolvedStatement Body { get; }
 
-		public EntryPoint(ResolvedType? returnType, MethodSymbol methodSymbol,
-						  IEnumerable<ParameterSymbol> parameterList, ResolvedStatement body)
+		public EntryPoint(MethodSymbol methodSymbol, IEnumerable<ParameterSymbol> parameterList, ResolvedStatement body)
 		{
-			ReturnType = returnType;
 			MethodSymbol = methodSymbol;
 			ParameterList = parameterList.ToImmutableArray();
 			Body = body;
@@ -249,14 +247,12 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class ExternalMethod : ResolvedStatement
 	{
-		public ResolvedType? ReturnType { get; }
+		public ResolvedType? ReturnType => ExternalMethodSymbol.ReturnType;
 		public ExternalMethodSymbol ExternalMethodSymbol { get; }
 		public ImmutableArray<ParameterSymbol> ParameterList { get; }
 
-		public ExternalMethod(ResolvedType? returnType, ExternalMethodSymbol externalMethodSymbol,
-							  IEnumerable<ParameterSymbol> parameterList)
+		public ExternalMethod(ExternalMethodSymbol externalMethodSymbol, IEnumerable<ParameterSymbol> parameterList)
 		{
-			ReturnType = returnType;
 			ExternalMethodSymbol = externalMethodSymbol;
 			ParameterList = parameterList.ToImmutableArray();
 		}
@@ -271,21 +267,13 @@ public abstract class ResolvedStatement : ResolvedNode
 	{
 		public AccessModifier AccessModifier { get; }
 		public ConstructorSymbol ConstructorSymbol { get; }
-		public ImmutableArray<ParameterSymbol> ParameterList { get; }
 		public ResolvedStatement Body { get; }
-		public ConstructorSymbol? Initializer { get; }
-		public ImmutableArray<ResolvedExpression> ArgumentList { get; }
 
-		public Constructor(AccessModifier accessModifier, ConstructorSymbol constructorSymbol,
-						   IEnumerable<ParameterSymbol> parameterList, ResolvedStatement body,
-						   ConstructorSymbol? initializer, IEnumerable<ResolvedExpression> argumentList)
+		public Constructor(AccessModifier accessModifier, ConstructorSymbol constructorSymbol,ResolvedStatement body)
 		{
 			AccessModifier = accessModifier;
 			ConstructorSymbol = constructorSymbol;
-			ParameterList = parameterList.ToImmutableArray();
 			Body = body;
-			Initializer = initializer;
-			ArgumentList = argumentList.ToImmutableArray();
 		}
 		
 		public override void AcceptVisitor(IVisitor visitor)
@@ -297,16 +285,15 @@ public abstract class ResolvedStatement : ResolvedNode
 	public sealed class Indexer : ResolvedStatement
 	{
 		public AccessModifier AccessModifier { get; }
-		public ResolvedType Type { get; }
+		public ResolvedType Type => IndexerSymbol.Type!;
 		public IndexerSymbol IndexerSymbol { get; }
 		public ImmutableArray<ParameterSymbol> ParameterList { get; }
 		public ImmutableArray<ResolvedStatement> Body { get; }
 
-		public Indexer(AccessModifier accessModifier, ResolvedType type, IEnumerable<ParameterSymbol> parameterList,
+		public Indexer(AccessModifier accessModifier, IEnumerable<ParameterSymbol> parameterList,
 					   IEnumerable<ResolvedStatement> body, IndexerSymbol indexerSymbol)
 		{
 			AccessModifier = accessModifier;
-			Type = type;
 			IndexerSymbol = indexerSymbol;
 			ParameterList = parameterList.ToImmutableArray();
 			Body = body.ToImmutableArray();
@@ -420,16 +407,15 @@ public abstract class ResolvedStatement : ResolvedNode
 	{
 		public AccessModifier AccessModifier { get; }
 		public ImmutableArray<MethodModifier> Modifiers { get; }
-		public ResolvedType Type { get; }
+		public ResolvedType Type => PropertySymbol.Type!;
 		public PropertySymbol PropertySymbol { get; }
 		public ImmutableArray<ResolvedStatement> Body { get; }
 
-		public Property(AccessModifier accessModifier, IEnumerable<MethodModifier> modifiers, ResolvedType type,
+		public Property(AccessModifier accessModifier, IEnumerable<MethodModifier> modifiers,
 						PropertySymbol propertySymbol, IEnumerable<ResolvedStatement> body)
 		{
 			AccessModifier = accessModifier;
 			Modifiers = modifiers.ToImmutableArray();
-			Type = type;
 			PropertySymbol = propertySymbol;
 			Body = body.ToImmutableArray();
 		}
@@ -443,15 +429,14 @@ public abstract class ResolvedStatement : ResolvedNode
 	public sealed class PropertySignature : ResolvedStatement
 	{
 		public ImmutableArray<MethodModifier> Modifiers { get; }
-		public ResolvedType Type { get; }
+		public ResolvedType Type => PropertySymbol.Type!;
 		public PropertySymbol PropertySymbol { get; }
 		public ImmutableArray<ResolvedStatement> Body { get; }
 
-		public PropertySignature(IEnumerable<MethodModifier> modifiers, ResolvedType type,
-								 PropertySymbol propertySymbol, IEnumerable<ResolvedStatement> body)
+		public PropertySignature(IEnumerable<MethodModifier> modifiers, PropertySymbol propertySymbol,
+								 IEnumerable<ResolvedStatement> body)
 		{
 			Modifiers = modifiers.ToImmutableArray();
-			Type = type;
 			PropertySymbol = propertySymbol;
 			Body = body.ToImmutableArray();
 		}
@@ -466,20 +451,19 @@ public abstract class ResolvedStatement : ResolvedNode
 	{
 		public AccessModifier AccessModifier { get; }
 		public ImmutableArray<MethodModifier> Modifiers { get; }
-		public ResolvedType? ReturnType { get; }
+		public ResolvedType? ReturnType => MethodSymbol.ReturnType;
 		public MethodSymbol MethodSymbol { get; }
 		public ResolvedStatement Body { get; }
 		public ImmutableArray<ParameterSymbol> ParameterList { get; }
 		public bool IsAsync { get; }
 		public ImmutableArray<TemplateParameterSymbol> TypeParameters { get; }
 
-		public Method(AccessModifier accessModifier, IEnumerable<MethodModifier> modifiers, ResolvedType? returnType,
-					  MethodSymbol methodSymbol, ResolvedStatement body, IEnumerable<ParameterSymbol> parameterList,
-					  bool isAsync, IEnumerable<TemplateParameterSymbol> typeParameters)
+		public Method(AccessModifier accessModifier, IEnumerable<MethodModifier> modifiers, MethodSymbol methodSymbol,
+					  ResolvedStatement body, IEnumerable<ParameterSymbol> parameterList, bool isAsync,
+					  IEnumerable<TemplateParameterSymbol> typeParameters)
 		{
 			AccessModifier = accessModifier;
 			Modifiers = modifiers.ToImmutableArray();
-			ReturnType = returnType;
 			MethodSymbol = methodSymbol;
 			Body = body;
 			ParameterList = parameterList.ToImmutableArray();
@@ -496,18 +480,17 @@ public abstract class ResolvedStatement : ResolvedNode
 	public sealed class MethodSignature : ResolvedStatement
 	{
 		public ImmutableArray<MethodModifier> Modifiers { get; }
-		public ResolvedType? ReturnType { get; }
+		public ResolvedType? ReturnType => MethodSymbol.ReturnType;
 		public MethodSymbol MethodSymbol { get; }
 		public ImmutableArray<ParameterSymbol> ParameterList { get; }
 		public bool IsAsync { get; }
 		public ImmutableArray<TemplateParameterSymbol> TypeParameters { get; }
 
-		public MethodSignature(IEnumerable<MethodModifier> modifiers, ResolvedType? returnType,
-							   MethodSymbol methodSymbol, IEnumerable<ParameterSymbol> parameterList, bool isAsync,
+		public MethodSignature(IEnumerable<MethodModifier> modifiers, MethodSymbol methodSymbol,
+							   IEnumerable<ParameterSymbol> parameterList, bool isAsync,
 							   IEnumerable<TemplateParameterSymbol> typeParameters)
 		{
 			Modifiers = modifiers.ToImmutableArray();
-			ReturnType = returnType;
 			MethodSymbol = methodSymbol;
 			ParameterList = parameterList.ToImmutableArray();
 			IsAsync = isAsync;
@@ -522,16 +505,13 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class OperatorOverload : ResolvedStatement
 	{
-		public ResolvedType ReturnType { get; }
+		public ResolvedType ReturnType => MethodSymbol.ReturnType!;
 		public OperatorSymbol OperatorSymbol { get; }
 		public MethodSymbol MethodSymbol { get; }
 		public ResolvedStatement Body { get; }
 
-		public OperatorOverload(ResolvedType returnType, OperatorSymbol operatorSymbol, 
-								MethodSymbol methodSymbol, ResolvedStatement body)
-
+		public OperatorOverload(OperatorSymbol operatorSymbol, MethodSymbol methodSymbol, ResolvedStatement body)
 		{
-			ReturnType = returnType;
 			OperatorSymbol = operatorSymbol;
 			MethodSymbol = methodSymbol;
 			Body = body;
@@ -545,14 +525,12 @@ public abstract class ResolvedStatement : ResolvedNode
 
 	public sealed class OperatorOverloadSignature : ResolvedStatement
 	{
-		public ResolvedType ReturnType { get; }
+		public ResolvedType ReturnType => MethodSymbol.ReturnType!;
 		public OperatorSymbol OperatorSymbol { get; }
 		public MethodSymbol MethodSymbol { get; }
 
-		public OperatorOverloadSignature(ResolvedType returnType, OperatorSymbol operatorSymbol, MethodSymbol methodSymbol)
-
+		public OperatorOverloadSignature(OperatorSymbol operatorSymbol, MethodSymbol methodSymbol)
 		{
-			ReturnType = returnType;
 			OperatorSymbol = operatorSymbol;
 			MethodSymbol = methodSymbol;
 		}
@@ -567,16 +545,15 @@ public abstract class ResolvedStatement : ResolvedNode
 	{
 		public AccessModifier AccessModifier { get; }
 		public ImmutableArray<FieldModifier> Modifiers { get; }
-		public ResolvedType Type { get; }
+		public ResolvedType Type => FieldSymbol.Type!;
 		public FieldSymbol FieldSymbol { get; }
 		public ResolvedExpression? Initializer { get; }
 
-		public Field(AccessModifier accessModifier, IEnumerable<FieldModifier> modifiers, ResolvedType type,
-					 FieldSymbol fieldSymbol, ResolvedExpression? initializer)
+		public Field(AccessModifier accessModifier, IEnumerable<FieldModifier> modifiers, FieldSymbol fieldSymbol,
+					 ResolvedExpression? initializer)
 		{
 			AccessModifier = accessModifier;
 			Modifiers = modifiers.ToImmutableArray();
-			Type = type;
 			FieldSymbol = fieldSymbol;
 			Initializer = initializer;
 		}

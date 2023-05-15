@@ -384,8 +384,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.Return();
 
 		entryPointSymbol.Resolved = true;
-		return new ResolvedStatement.EntryPoint(entryPointSymbol.ReturnType, entryPointSymbol,
-			entryPointSymbol.GetParameters(), body);
+		return new ResolvedStatement.EntryPoint(entryPointSymbol, entryPointSymbol.GetParameters(), body);
 	}
 
 	public ResolvedStatement VisitDefineStatement(Statement.Define statement)
@@ -552,8 +551,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.Return();
 
 		externalMethodSymbol.Resolved = true;
-		return new ResolvedStatement.ExternalMethod(externalMethodSymbol.ReturnType, externalMethodSymbol,
-			externalMethodSymbol.GetParameters());
+		return new ResolvedStatement.ExternalMethod(externalMethodSymbol, externalMethodSymbol.GetParameters());
 	}
 
 	public ResolvedStatement VisitConstructorStatement(Statement.Constructor statement)
@@ -593,11 +591,51 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.ExitScope();
 		semanticModel.Return();
 
-		// @TODO Resolve initializer and arguments
+		if (statement.Initializer is not null)
+		{
+			var argumentTypes = new List<ResolvedType?>();
+			var arguments = new List<ResolvedExpression>();
+
+			foreach (var argument in statement.ArgumentList)
+			{
+				var resolvedExpression = argument.AcceptVisitor(this);
+				if (resolvedExpression.Type is null)
+					throw new Exception("Failed to resolve initializer argument type.");
+				
+				arguments.Add(resolvedExpression);
+				argumentTypes.Add(resolvedExpression.Type);
+			}
+
+			var lookupTarget = statement.Initializer.Text switch
+			{
+				"this" => semanticModel.CurrentType,
+				"base" => semanticModel.CurrentType?.Ancestor,
+				_      => null
+			};
+
+			if (lookupTarget is null)
+				throw new Exception("Failed to resolve initializer target.");
+
+			ConstructorSymbol? initializer = null;
+			foreach (var child in lookupTarget.Children)
+			{
+				if (child is not ConstructorSymbol inherited)
+					continue;
+				
+				initializer = inherited;
+				break;
+			}
+
+			initializer = initializer?.FindOverload(argumentTypes) as ConstructorSymbol;
+			if (initializer is null)
+				throw new Exception($"Failed to find constructor initializer '{statement.Initializer.Text}'");
+
+			constructorSymbol.Initializer = initializer;
+			constructorSymbol.InitializerArguments = arguments;
+		}
 
 		constructorSymbol.Resolved = true;
-		return new ResolvedStatement.Constructor(constructorSymbol.AccessModifier, constructorSymbol,
-			constructorSymbol.GetParameters(), body, null, Array.Empty<ResolvedExpression>());
+		return new ResolvedStatement.Constructor(constructorSymbol.AccessModifier, constructorSymbol, body);
 	}
 
 	public ResolvedStatement VisitIndexerStatement(Statement.Indexer statement)
@@ -633,8 +671,8 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.Return();
 
 		indexerSymbol.Resolved = true;
-		return new ResolvedStatement.Indexer(indexerSymbol.AccessModifier, indexerSymbol.Type,
-			indexerSymbol.GetParameters(), body, indexerSymbol);
+		return new ResolvedStatement.Indexer(indexerSymbol.AccessModifier, indexerSymbol.GetParameters(), body,
+			indexerSymbol);
 	}
 
 	private static AccessModifier GetAccessModifier(SyntaxToken? modifierToken, AccessModifier @default)
@@ -776,8 +814,8 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		propertySymbol.Type = type;
 		propertySymbol.Resolved = true;
-		return new ResolvedStatement.Property(propertySymbol.AccessModifier, propertySymbol.Modifiers, type,
-			propertySymbol, body);
+		return new ResolvedStatement.Property(propertySymbol.AccessModifier, propertySymbol.Modifiers, propertySymbol,
+			body);
 	}
 
 	public ResolvedStatement VisitPropertySignatureStatement(Statement.PropertySignature statement)
@@ -805,7 +843,8 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.Return();
 
 		propertySymbol.Resolved = true;
-		return new ResolvedStatement.PropertySignature(propertySymbol.Modifiers, type, propertySymbol, body);
+		propertySymbol.Type = type;
+		return new ResolvedStatement.PropertySignature(propertySymbol.Modifiers, propertySymbol, body);
 	}
 
 	public ResolvedStatement VisitMethodStatement(Statement.Method statement)
@@ -833,9 +872,8 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		methodSymbol.Resolved = true;
 		methodSymbol.ReturnType = returnType;
-		return new ResolvedStatement.Method(methodSymbol.AccessModifier, methodSymbol.Modifiers, returnType,
-			methodSymbol, body, methodSymbol.GetParameters(), statement.AsyncToken is not null,
-			methodSymbol.GetTemplateParameters());
+		return new ResolvedStatement.Method(methodSymbol.AccessModifier, methodSymbol.Modifiers, methodSymbol, body,
+			methodSymbol.GetParameters(), statement.AsyncToken is not null, methodSymbol.GetTemplateParameters());
 	}
 
 	public ResolvedStatement VisitMethodSignatureStatement(Statement.MethodSignature statement)
@@ -861,8 +899,9 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		semanticModel.ExitScope();
 
 		methodSymbol.Resolved = true;
-		return new ResolvedStatement.MethodSignature(methodSymbol.Modifiers, returnType, methodSymbol,
-			methodSymbol.GetParameters(), statement.AsyncToken is not null, methodSymbol.GetTemplateParameters());
+		methodSymbol.ReturnType = returnType;
+		return new ResolvedStatement.MethodSignature(methodSymbol.Modifiers, methodSymbol, methodSymbol.GetParameters(),
+			statement.AsyncToken is not null, methodSymbol.GetTemplateParameters());
 	}
 
 	public ResolvedStatement VisitFieldStatement(Statement.Field statement)
@@ -881,9 +920,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		var initializer = statement.Initializer?.AcceptVisitor(this);
 
 		fieldSymbol.Resolved = true;
-
-		return new ResolvedStatement.Field(fieldSymbol.AccessModifier, fieldSymbol.Modifiers, fieldSymbol.Type,
-			fieldSymbol, initializer);
+		return new ResolvedStatement.Field(fieldSymbol.AccessModifier, fieldSymbol.Modifiers, fieldSymbol, initializer);
 	}
 
 	public ResolvedStatement VisitBreakStatement(Statement.Break statement)
@@ -1165,7 +1202,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		if (operatorSymbol is null)
 			throw new Exception($"Failed to resolve operator '{statement.Operator.TokenSpan}'.");
 
-		return new ResolvedStatement.OperatorOverload(returnType, operatorSymbol, methodSymbol, body);
+		return new ResolvedStatement.OperatorOverload(operatorSymbol, methodSymbol, body);
 	}
 
 	public ResolvedStatement VisitOperatorOverloadSignatureStatement(Statement.OperatorOverloadSignature statement)
@@ -1205,7 +1242,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		if (operatorSymbol is null)
 			throw new Exception($"Failed to resolve operator '{statement.Operator.TokenSpan}'.");
 
-		return new ResolvedStatement.OperatorOverloadSignature(returnType, operatorSymbol, methodSymbol);
+		return new ResolvedStatement.OperatorOverloadSignature(operatorSymbol, methodSymbol);
 	}
 
 	public ResolvedExpression VisitAwaitExpression(Expression.Await expression)
@@ -1327,7 +1364,6 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		return new ResolvedExpression.Unary(operand, expression.Operator, expressionType, operatorMethod);
 	}
 
-	// @TODO Fix this
 	public ResolvedExpression VisitIdentifierExpression(Expression.Identifier expression)
 	{
 		var symbol = semanticModel.FindSymbol(expression.NameToken.Text);
@@ -1349,7 +1385,6 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		}
 	}
 
-	// @TODO Fix this
 	public ResolvedExpression VisitQualifierExpression(Expression.Qualifier expression)
 	{
 		var symbol = semanticModel.FindSymbol(expression.NameToken.Text);
@@ -1403,7 +1438,6 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		return new ResolvedExpression.Call(overload, templateArguments, arguments);
 	}
 
-	// @TODO
 	public ResolvedExpression VisitLiteralExpression(Expression.Literal expression)
 	{
 		var thisSymbol = semanticModel.CurrentSymbol;
@@ -1524,10 +1558,10 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		switch (typedSymbol.Type)
 		{
 			case ArrayResolvedType arrayResolvedType:
-				if (key.Type != SimpleResolvedType.Int8 && key.Type != SimpleResolvedType.UInt8 &&
-					key.Type != SimpleResolvedType.Int16 && key.Type != SimpleResolvedType.UInt16 &&
-					key.Type != SimpleResolvedType.Int32 && key.Type != SimpleResolvedType.UInt32 &&
-					key.Type != SimpleResolvedType.Int64 && key.Type != SimpleResolvedType.UInt64)
+				if (!Equals(key.Type, SimpleResolvedType.Int8) && !Equals(key.Type, SimpleResolvedType.UInt8) &&
+					!Equals(key.Type, SimpleResolvedType.Int16) && !Equals(key.Type, SimpleResolvedType.UInt16) &&
+					!Equals(key.Type, SimpleResolvedType.Int32) && !Equals(key.Type, SimpleResolvedType.UInt32) &&
+					!Equals(key.Type, SimpleResolvedType.Int64) && !Equals(key.Type, SimpleResolvedType.UInt64))
 					throw new Exception("Invalid indexing key.");
 				
 				resolvedType = arrayResolvedType.ElementType;

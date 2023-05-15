@@ -23,7 +23,7 @@ public sealed class SemanticModel
 
 	private readonly List<Symbol> symbols = new();
 	private List<MethodSymbol> EntryPoints { get; } = new();
-	private TypeSymbol? CurrentType => typeSymbolStack.TryPeek(out var symbol) ? symbol : null;
+	public TypeSymbol? CurrentType => typeSymbolStack.TryPeek(out var symbol) ? symbol : null;
 	public Symbol? CurrentSymbol => symbolStack.TryPeek(out var symbol) ? symbol : null;
 	public Scope? CurrentScope => scopeStack.TryPeek(out var scope) ? scope : null;
 	private readonly Stack<Symbol> symbolStack = new();

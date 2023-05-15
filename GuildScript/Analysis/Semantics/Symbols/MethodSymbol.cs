@@ -80,7 +80,12 @@ public sealed class MethodSymbol : MemberSymbol, ITypedSymbol, ITemplateable, IC
 		return overloads;
 	}
 
-	public ICallable? FindOverload(List<ResolvedType?> argumentTypes, int templateCount = 0)
+	public ICallable? FindOverload(List<ResolvedType?> argumentTypes)
+	{
+		return FindOverload(argumentTypes, 0);
+	}
+
+	public ICallable? FindOverload(List<ResolvedType?> argumentTypes, int templateCount)
 	{
 		var validOverloads = new List<MethodSymbol>();
 		var localOverloads = new List<MethodSymbol> { this };
