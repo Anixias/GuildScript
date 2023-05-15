@@ -164,6 +164,14 @@ public sealed class Parser
 		return builder.ToImmutable();
 	}
 
+	private void Recover()
+	{
+		while (!EndOfFile && !Match(SyntaxTokenType.CloseBrace, SyntaxTokenType.Semicolon))
+		{
+			Advance();
+		}
+	}
+
 	private Statement.Program ParseProgram()
 	{
 		// <import-statement>*
@@ -185,7 +193,14 @@ public sealed class Parser
 		var statements = new List<Statement>();
 		while (!EndOfFile)
 		{
-			statements.Add(ParseTopLevelStatement());
+			try
+			{
+				statements.Add(ParseTopLevelStatement());
+			}
+			catch (ParseException)
+			{
+				Recover();
+			}
 		}
 
 		return new Statement.Program(importStatements.ToArray(), module, statements.ToArray());
@@ -258,7 +273,14 @@ public sealed class Parser
 
 		while (!EndOfFile && !Check(SyntaxTokenType.CloseBrace))
 		{
-			statements.Add(ParseStatement());
+			try
+			{
+				statements.Add(ParseStatement());
+			}
+			catch (ParseException)
+			{
+				Recover();
+			}
 		}
 		
 		Consume(SyntaxTokenType.CloseBrace);
