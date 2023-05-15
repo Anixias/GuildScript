@@ -600,6 +600,11 @@ public sealed class Lexer
 							value = doubleValue;
 						
 						break;
+					default:
+						if (double.TryParse(literal, out var defaultDoubleValue))
+							value = defaultDoubleValue;
+						
+						break;
 				}
 				break;
 			}
