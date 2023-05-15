@@ -11,15 +11,20 @@ public global class Console
 		ExternalWrite(text);
 	}
 	
-	public void Write(object obj)
+	public void Write(object? obj)
 	{
-	    ExternalWrite(obj.ToString());
+		ExternalWrite(obj?.ToString() ?? "null");
 	}
 	
 	public void WriteLine(string text)
-    {
-        ExternalWriteLine(text);
-    }
+	{
+		ExternalWriteLine(text);
+	}
+	
+	public void WriteLine(object? obj)
+	{
+		ExternalWriteLine(obj?.ToString() ?? "null");
+	}
 	
 	public string ReadLine()
 	{

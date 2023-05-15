@@ -2,8 +2,6 @@ import System.Console;
 
 module Adventure;
 
-define Integer as int?[];
-
 class Room
 {
 	public string Name { get; set; }
@@ -33,7 +31,7 @@ class Player
 	}
 }
 
-entry Integer[] Main(int arg1, string arg2, Player arg3)
+entry int Main()
 {
 	// Create rooms
 	var room1 = new Room
@@ -100,5 +98,5 @@ entry Integer[] Main(int arg1, string arg2, Player arg3)
 		}
 	}
 
-	return 0;
+	return 0i32;
 }

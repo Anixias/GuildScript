@@ -505,21 +505,112 @@ public sealed class Lexer
 			Advance();
 		}
 
-		if (Current == '.')
+		var literal = Text;
+		switch (Current)
 		{
-			type = SyntaxTokenType.DoubleConstant;
-			Advance();
-			
-			while (char.IsDigit(Current))
+			case 'i' or 'I':
 			{
 				Advance();
+				switch (Current)
+				{
+					case '8':
+						Advance();
+						type = SyntaxTokenType.Int8Constant;
+						break;
+					case '1' when Peek(1) == '6':
+						Advance();
+						Advance();
+						type = SyntaxTokenType.Int16Constant;
+						break;
+					case '3' when Peek(1) == '2':
+						Advance();
+						Advance();
+						type = SyntaxTokenType.Int32Constant;
+						break;
+					case '6' when Peek(1) == '4':
+						Advance();
+						Advance();
+						type = SyntaxTokenType.Int64Constant;
+						break;
+				}
+				
+				if (int.TryParse(literal, out var intValue))
+					value = intValue;
+				
+				break;
 			}
+			case 'u' or 'U':
+			{
+				Advance();
+				switch (Current)
+				{
+					case '8':
+						Advance();
+						type = SyntaxTokenType.UInt8Constant;
+						break;
+					case '1' when Peek(1) == '6':
+						Advance();
+						Advance();
+						type = SyntaxTokenType.UInt16Constant;
+						break;
+					case '3' when Peek(1) == '2':
+						Advance();
+						Advance();
+						type = SyntaxTokenType.UInt32Constant;
+						break;
+					case '6' when Peek(1) == '4':
+						Advance();
+						Advance();
+						type = SyntaxTokenType.UInt64Constant;
+						break;
+				}
+				
+				if (int.TryParse(literal, out var intValue))
+					value = intValue;
+				
+				break;
+			}
+			case '.':
+			{
+				type = SyntaxTokenType.DoubleConstant;
+				Advance();
 			
-			if (double.TryParse(Text, out var doubleValue))
-				value = doubleValue;
+				while (char.IsDigit(Current))
+				{
+					Advance();
+				}
+
+				literal = Text;
+
+				switch (Current)
+				{
+					case 's' or 'S':
+						Advance();
+						type = SyntaxTokenType.SingleConstant;
+			
+						if (float.TryParse(literal, out var floatValue))
+							value = floatValue;
+						
+						break;
+					case 'd' or 'D':
+						Advance();
+						type = SyntaxTokenType.DoubleConstant;
+			
+						if (double.TryParse(literal, out var doubleValue))
+							value = doubleValue;
+						
+						break;
+				}
+				break;
+			}
+			default:
+			{
+				type = SyntaxTokenType.Int64Constant;
+				if (int.TryParse(Text, out var intValue))
+					value = intValue;
+				break;
+			}
 		}
-		else if (int.TryParse(Text, out var intValue))
-			value = intValue;
 	}
 	
 	private void ScanIdentifier()
