@@ -1279,15 +1279,23 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		if (right.Type is null)
 			throw new Exception("Cannot operate on void types.");
 
-		var expressionType = expression.Operator.GetResultType(left.Type, right.Type);
+		var simpleOperator = expression.Operator;
+		BinaryOperator? assignmentOperator = null;
+		var isCompoundAssignment = expression.Operator.IsCompoundAssignment;
+		if (isCompoundAssignment)
+		{
+			(simpleOperator, assignmentOperator) = expression.Operator.Deconstruct();
+		}
+
+		var expressionType = simpleOperator.GetResultType(left.Type, right.Type);
 		MethodSymbol? operatorMethod = null;
 		if (expressionType is null)
 		{
 			// Look for operator overloads on either type
-			var leftOverload = left.Type.TypeSymbol.FindOperatorOverload(left.Type, expression.Operator, right.Type);
+			var leftOverload = left.Type.TypeSymbol.FindOperatorOverload(left.Type, simpleOperator, right.Type);
 			var rightOverload = left.Type.Equals(right.Type)
 				? null
-				: right.Type.TypeSymbol.FindOperatorOverload(left.Type, expression.Operator, right.Type);
+				: right.Type.TypeSymbol.FindOperatorOverload(left.Type, simpleOperator, right.Type);
 
 			if (leftOverload is not null)
 			{
@@ -1312,9 +1320,26 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 		if (expressionType is null)
 			throw new Exception(
-				$"Cannot use operator '{expression.Operator}' on types '{left.Type}' and '{right.Type}'.");
+				$"Cannot use operator '{simpleOperator}' on types '{left.Type}' and '{right.Type}'.");
 
-		return new ResolvedExpression.Binary(left, expression.Operator, right, expressionType, operatorMethod);
+		if (operatorMethod is null)
+		{
+			if (!isCompoundAssignment || assignmentOperator is null)
+				return new ResolvedExpression.Binary(left, simpleOperator, right, expressionType);
+			
+			var resolvedExpression = new ResolvedExpression.Binary(left, simpleOperator, right, expressionType);
+			return new ResolvedExpression.Binary(left, assignmentOperator, resolvedExpression, left.Type);
+		}
+
+		var arguments = new List<ResolvedExpression> { left, right };
+		var callExpression = new ResolvedExpression.Call(operatorMethod, Array.Empty<TypeSymbol>(), arguments);
+
+		if (isCompoundAssignment && assignmentOperator is not null)
+		{
+			return new ResolvedExpression.Binary(left, assignmentOperator, callExpression, left.Type);
+		}
+		
+		return callExpression;
 	}
 
 	public ResolvedExpression VisitTypeRelationExpression(Expression.TypeRelation expression)

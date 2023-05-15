@@ -1,5 +1,6 @@
 using GuildScript.Analysis.Semantics;
 using GuildScript.Analysis.Semantics.Symbols;
+using GuildScript.Analysis.Text;
 
 namespace GuildScript.Analysis.Syntax;
 
@@ -227,12 +228,191 @@ public sealed class BinaryOperator : Operator
 
 	public BinaryOperation? Operation => LookupBinaryOperation(TokenSpan);
 
+	public bool IsCompoundAssignment
+	{
+		get
+		{
+			switch (Operation)
+			{
+				case BinaryOperation.AddAssign:
+				case BinaryOperation.SubtractAssign:
+				case BinaryOperation.MultiplyAssign:
+				case BinaryOperation.DivideAssign:
+				case BinaryOperation.ModuloAssign:
+				case BinaryOperation.ExponentAssign:
+				case BinaryOperation.BitwiseAndAssign:
+				case BinaryOperation.BitwiseOrAssign:
+				case BinaryOperation.BitwiseXorAssign:
+				case BinaryOperation.LogicalAndAssign:
+				case BinaryOperation.LogicalOrAssign:
+				case BinaryOperation.LogicalXorAssign:
+				case BinaryOperation.NullCoalescenceAssign:
+				case BinaryOperation.ShiftLeftAssign:
+				case BinaryOperation.ShiftRightAssign:
+				case BinaryOperation.RotateLeftAssign:
+				case BinaryOperation.RotateRightAssign:
+					return true;
+				default:
+					return false;
+			}
+		}
+	}
+
 	public BinaryOperator(SyntaxTokenSpan tokenSpan) : base(tokenSpan)
 	{
 	}
 
 	public BinaryOperator(SyntaxToken operatorToken) : base(new SyntaxTokenSpan(operatorToken))
 	{
+	}
+
+	public (BinaryOperator, BinaryOperator?) Deconstruct()
+	{
+		var simple = AsSimpleOperation();
+		var assignment = AsAssignmentOperation();
+
+		return (simple, assignment);
+	}
+
+	public BinaryOperator AsSimpleOperation()
+	{
+		var sourceSpan = TokenSpan.Tokens[0].Span;
+		var span = new TextSpan(sourceSpan.Start, 1, sourceSpan.SourceText);
+		switch (Operation)
+		{
+			case BinaryOperation.AddAssign:
+			{
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.Plus, span.ToString(), null, span));
+			}
+			case BinaryOperation.SubtractAssign:
+			{
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.Minus, span.ToString(), null, span));
+			}
+			case BinaryOperation.MultiplyAssign:
+			{
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.Star, span.ToString(), null, span));
+			}
+			case BinaryOperation.DivideAssign:
+			{
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.Slash, span.ToString(), null, span));
+			}
+			case BinaryOperation.ModuloAssign:
+			{
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.Percent, span.ToString(), null, span));
+			}
+			case BinaryOperation.ExponentAssign:
+			{
+				span = new TextSpan(sourceSpan.Start, 2, sourceSpan.SourceText);
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.StarStar, span.ToString(), null, span));
+			}
+			case BinaryOperation.BitwiseAndAssign:
+			{
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.Amp, span.ToString(), null, span));
+			}
+			case BinaryOperation.BitwiseOrAssign:
+			{
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.Pipe, span.ToString(), null, span));
+			}
+			case BinaryOperation.BitwiseXorAssign:
+			{
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.Caret, span.ToString(), null, span));
+			}
+			case BinaryOperation.LogicalAndAssign:
+			{
+				span = new TextSpan(sourceSpan.Start, 2, sourceSpan.SourceText);
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.AmpAmp, span.ToString(), null, span));
+			}
+			case BinaryOperation.LogicalOrAssign:
+			{
+				span = new TextSpan(sourceSpan.Start, 2, sourceSpan.SourceText);
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.PipePipe, span.ToString(), null, span));
+			}
+			case BinaryOperation.LogicalXorAssign:
+			{
+				span = new TextSpan(sourceSpan.Start, 2, sourceSpan.SourceText);
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.CaretCaret, span.ToString(), null, span));
+			}
+			case BinaryOperation.NullCoalescenceAssign:
+			{
+				span = new TextSpan(sourceSpan.Start, 2, sourceSpan.SourceText);
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.QuestionQuestion, span.ToString(), null, span));
+			}
+			case BinaryOperation.ShiftLeftAssign:
+			{
+				var first = new SyntaxToken(SyntaxTokenType.LeftAngled, span.ToString(), null, span);
+				span = new TextSpan(sourceSpan.Start + 1, 1, sourceSpan.SourceText);
+				var second = new SyntaxToken(SyntaxTokenType.LeftAngled, span.ToString(), null, span);
+				return new BinaryOperator(new SyntaxTokenSpan(first, second));
+			}
+			case BinaryOperation.ShiftRightAssign:
+			{
+				var first = new SyntaxToken(SyntaxTokenType.RightAngled, span.ToString(), null, span);
+				span = new TextSpan(sourceSpan.Start + 1, 1, sourceSpan.SourceText);
+				var second = new SyntaxToken(SyntaxTokenType.RightAngled, span.ToString(), null, span);
+				return new BinaryOperator(new SyntaxTokenSpan(first, second));
+			}
+			case BinaryOperation.RotateLeftAssign:
+			{
+				var first = new SyntaxToken(SyntaxTokenType.LeftAngled, span.ToString(), null, span);
+				span = new TextSpan(sourceSpan.Start + 1, 1, sourceSpan.SourceText);
+				var second = new SyntaxToken(SyntaxTokenType.LeftAngled, span.ToString(), null, span);
+				span = new TextSpan(sourceSpan.Start + 2, 1, sourceSpan.SourceText);
+				var third = new SyntaxToken(SyntaxTokenType.LeftAngled, span.ToString(), null, span);
+				return new BinaryOperator(new SyntaxTokenSpan(first, second, third));
+			}
+			case BinaryOperation.RotateRightAssign:
+			{
+				var first = new SyntaxToken(SyntaxTokenType.RightAngled, span.ToString(), null, span);
+				span = new TextSpan(sourceSpan.Start + 1, 1, sourceSpan.SourceText);
+				var second = new SyntaxToken(SyntaxTokenType.RightAngled, span.ToString(), null, span);
+				span = new TextSpan(sourceSpan.Start + 2, 1, sourceSpan.SourceText);
+				var third = new SyntaxToken(SyntaxTokenType.RightAngled, span.ToString(), null, span);
+				return new BinaryOperator(new SyntaxTokenSpan(first, second, third));
+			}
+			default:
+				return this;
+		}
+	}
+
+	public BinaryOperator? AsAssignmentOperation()
+	{
+		var sourceSpan = TokenSpan.Tokens[0].Span;
+		switch (Operation)
+		{
+			case BinaryOperation.AddAssign:
+			case BinaryOperation.SubtractAssign:
+			case BinaryOperation.MultiplyAssign:
+			case BinaryOperation.DivideAssign:
+			case BinaryOperation.ModuloAssign:
+			case BinaryOperation.BitwiseAndAssign:
+			case BinaryOperation.BitwiseOrAssign:
+			case BinaryOperation.BitwiseXorAssign:
+			{
+				var span = new TextSpan(sourceSpan.Start + 1, 1, sourceSpan.SourceText);
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.Equal, span.ToString(), null, span));
+			}
+			case BinaryOperation.ExponentAssign:
+			case BinaryOperation.LogicalAndAssign:
+			case BinaryOperation.LogicalOrAssign:
+			case BinaryOperation.LogicalXorAssign:
+			case BinaryOperation.NullCoalescenceAssign:
+			case BinaryOperation.ShiftLeftAssign:
+			case BinaryOperation.ShiftRightAssign:
+			{
+				var span = new TextSpan(sourceSpan.Start + 2, 1, sourceSpan.SourceText);
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.Equal, span.ToString(), null, span));
+			}
+			case BinaryOperation.RotateLeftAssign:
+			case BinaryOperation.RotateRightAssign:
+			{
+				var span = new TextSpan(sourceSpan.Start + 3, 1, sourceSpan.SourceText);
+				return new BinaryOperator(new SyntaxToken(SyntaxTokenType.Equal, span.ToString(), null, span));
+			}
+			case BinaryOperation.Assignment:
+				return this;
+			default:
+				return null;
+		}
 	}
 
 	public override int GetHashCode()

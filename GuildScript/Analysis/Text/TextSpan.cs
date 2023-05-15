@@ -16,4 +16,9 @@ public class TextSpan
 		Length = length;
 		SourceText = sourceText;
 	}
+
+	public override string ToString()
+	{
+		return SourceText.Span(this);
+	}
 }

@@ -1,4 +1,5 @@
 import System.Console;
+import System.Math;
 
 module Adventure;
 
@@ -19,12 +20,14 @@ class Room
 
 class Player
 {
+	public Vector2 Location { get; set; } 
 	public string Name { get; private set; }
 	private Room currentRoom;
 	public Room.RoomType favoriteRoom;
 	
 	public void MoveTo(Room room)
 	{
+		Location += new Vector2(1.0, 0.0);
 		currentRoom = room;
 		Console.WriteLine("You moved to: " + room.Name);
 		Console.WriteLine(room.Description);

@@ -122,16 +122,13 @@ public abstract class ResolvedExpression : ResolvedNode
 		public ResolvedExpression Left { get; }
 		public BinaryOperator Operator { get; }
 		public ResolvedExpression Right { get; }
-		public MethodSymbol? OperatorMethod { get; }
 
-		public Binary(ResolvedExpression left, BinaryOperator @operator, ResolvedExpression right, ResolvedType? type,
-					  MethodSymbol? operatorMethod)
+		public Binary(ResolvedExpression left, BinaryOperator @operator, ResolvedExpression right, ResolvedType? type)
 		{
 			Left = left;
 			Operator = @operator;
 			Right = right;
 			Type = type;
-			OperatorMethod = operatorMethod;
 		}
 
 		public override void AcceptVisitor(IVisitor visitor)
