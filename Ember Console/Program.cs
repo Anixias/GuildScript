@@ -129,9 +129,6 @@ SyntaxTree? AnalyzeFile(string path, SemanticModel semanticModel)
 			return null;
 		}
 
-		var treePrinter = new TreePrinter(Console.Out);
-		treePrinter.PrintTree(tree);
-
 		collector.CollectSymbols(tree);
 		if (!collector.Diagnostics.Any())
 			return tree;
@@ -196,8 +193,12 @@ void CompileFolder()
 		if (LinkTree(tree, semanticModel) is { } resolvedTree)
 			resolvedTrees.Add(resolvedTree);
 	}
-	
-	
+
+	foreach (var resolvedTree in resolvedTrees)
+	{
+		var treePrinter = new ResolvedTreePrinter(Console.Out);
+		treePrinter.PrintTree(resolvedTree);
+	}
 }
 
 /*

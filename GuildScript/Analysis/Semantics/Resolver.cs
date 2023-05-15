@@ -1440,15 +1440,15 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedExpression VisitLiteralExpression(Expression.Literal expression)
 	{
-		var thisSymbol = semanticModel.CurrentSymbol;
+		var thisSymbol = semanticModel.CurrentType;
 		ResolvedType? type;
 		switch (expression.Token.Type)
 		{
 			case SyntaxTokenType.This:
-				if (thisSymbol is not TypeSymbol thisTypeSymbol)
+				if (thisSymbol is null)
 					throw new Exception("Invalid usage of 'this'.");
 
-				type = typeSymbolLookup.TryGetValue(thisTypeSymbol, out var simpleType) ? simpleType : null;
+				type = typeSymbolLookup.TryGetValue(thisSymbol, out var simpleType) ? simpleType : null;
 				break;
 			case SyntaxTokenType.Base:
 				if (thisSymbol is not ClassSymbol classSymbol)
