@@ -7,6 +7,11 @@ public abstract class Symbol
 	public string Name { get; }
 	public ImmutableArray<Symbol> Children => children.Values.ToImmutableArray();
 
+	public override string ToString()
+	{
+		return $"[{base.ToString()}: {Name}]";
+	}
+
 	protected readonly Dictionary<string, Symbol> children = new();
 
 	protected Symbol(string name)
