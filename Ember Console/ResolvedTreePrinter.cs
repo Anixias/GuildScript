@@ -581,6 +581,21 @@ public class ResolvedTreePrinter : ResolvedStatement.IVisitor, ResolvedExpressio
 		PopIndent();
 	}
 
+	public void VisitCastOverloadStatement(ResolvedStatement.CastOverload statement)
+	{
+		Write("Cast Overload: " + statement.OverloadType);
+		
+		PushIndent();
+
+		IsLastChild = false;
+		Write(statement.MethodSymbol.ToString());
+
+		IsLastChild = true;
+		Print(statement.Body);
+		
+		PopIndent();
+	}
+
 	public void VisitDestructorStatement(ResolvedStatement.Destructor statement)
 	{
 		Write("Destructor");

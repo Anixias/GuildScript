@@ -508,9 +508,34 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		return new ResolvedStatement.Enum(enumSymbol.AccessModifier, enumSymbol, members, enumSymbol.BaseType);
 	}
 
+	public ResolvedStatement VisitCastOverloadStatement(Statement.CastOverload statement)
+	{
+		var symbol = semanticModel.FindSymbol(statement.CastTypeToken.Text + ":" + statement.TargetType);
+		if (symbol is not MethodSymbol methodSymbol)
+			throw new Exception("Failed to find cast overload symbol.");
+
+		var overloadType = statement.CastTypeToken.Type switch
+		{
+			SyntaxTokenType.Implicit => CastOverloadType.Implicit,
+			SyntaxTokenType.Explicit => CastOverloadType.Explicit,
+			_                        => throw new Exception($"Invalid cast overload type '{statement.CastTypeToken.Text}'.")
+		};
+
+		semanticModel.VisitSymbol(methodSymbol);
+		semanticModel.EnterScope(statement);
+
+		var body = statement.Body.AcceptVisitor(this);
+
+		semanticModel.ExitScope();
+		semanticModel.Return();
+
+		methodSymbol.Resolved = true;
+		return new ResolvedStatement.CastOverload(methodSymbol, body, overloadType);
+	}
+
 	public ResolvedStatement VisitDestructorStatement(Statement.Destructor statement)
 	{
-		var symbol = semanticModel.FindSymbol("destructor");
+		var symbol = semanticModel.FindSymbol(statement.DestructorToken.Text);
 		if (symbol is not DestructorSymbol destructorSymbol)
 			throw new Exception("Failed to find destructor symbol.");
 

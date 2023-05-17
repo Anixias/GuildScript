@@ -14,6 +14,7 @@ public abstract class Statement : SyntaxNode
 		void VisitStructStatement(Struct statement);
 		void VisitInterfaceStatement(Interface statement);
 		void VisitEnumStatement(Enum statement);
+		void VisitCastOverloadStatement(CastOverload statement);
 		void VisitDestructorStatement(Destructor statement);
 		void VisitExternalMethodStatement(ExternalMethod statement);
 		void VisitConstructorStatement(Constructor statement);
@@ -58,6 +59,7 @@ public abstract class Statement : SyntaxNode
 		T VisitStructStatement(Struct statement);
 		T VisitInterfaceStatement(Interface statement);
 		T VisitEnumStatement(Enum statement);
+		T VisitCastOverloadStatement(CastOverload statement);
 		T VisitDestructorStatement(Destructor statement);
 		T VisitExternalMethodStatement(ExternalMethod statement);
 		T VisitConstructorStatement(Constructor statement);
@@ -310,6 +312,30 @@ public abstract class Statement : SyntaxNode
 		public override T AcceptVisitor<T>(IVisitor<T> visitor)
 		{
 			return visitor.VisitEnumStatement(this);
+		}
+	}
+
+	public sealed class CastOverload : Statement
+	{
+		public SyntaxToken CastTypeToken { get; }
+		public TypeSyntax TargetType { get; }
+		public Statement Body { get; }
+		
+		public CastOverload(SyntaxToken castTypeToken, TypeSyntax targetType, Statement body)
+		{
+			CastTypeToken = castTypeToken;
+			TargetType = targetType;
+			Body = body;
+		}
+		
+		public override void AcceptVisitor(IVisitor visitor)
+		{
+			visitor.VisitCastOverloadStatement(this);
+		}
+
+		public override T AcceptVisitor<T>(IVisitor<T> visitor)
+		{
+			return visitor.VisitCastOverloadStatement(this);
 		}
 	}
 

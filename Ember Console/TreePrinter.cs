@@ -604,6 +604,23 @@ public class TreePrinter : Expression.IVisitor, Statement.IVisitor
 		PopIndent();
 	}
 
+	public void VisitCastOverloadStatement(Statement.CastOverload statement)
+	{
+		Write("Cast Overload");
+		
+		PushIndent();
+
+		IsLastChild = false;
+		Write("Cast Type: " + statement.CastTypeToken.Text);
+		
+		Write("Target Type: " + statement.TargetType);
+		
+		IsLastChild = true;
+		Print(statement.Body);
+		
+		PopIndent();
+	}
+
 	public void VisitDestructorStatement(Statement.Destructor statement)
 	{
 		Write("Destructor");

@@ -42,6 +42,11 @@ public sealed class SemanticAnalyzer : ResolvedStatement.IVisitor, ResolvedExpre
 		throw new NotImplementedException();
 	}
 
+	public void VisitCastOverloadStatement(ResolvedStatement.CastOverload statement)
+	{
+		throw new NotImplementedException();
+	}
+
 	public void VisitDestructorStatement(ResolvedStatement.Destructor statement)
 	{
 		throw new NotImplementedException();

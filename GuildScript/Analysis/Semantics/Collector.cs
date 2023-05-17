@@ -235,6 +235,24 @@ public sealed class Collector : Statement.IVisitor, Expression.IVisitor
 		}
 	}
 
+	public void VisitCastOverloadStatement(Statement.CastOverload statement)
+	{
+		try
+		{
+			var declaration = new Declaration(statement.CastTypeToken, statement);
+			semanticModel.AddMethod(statement.CastTypeToken.Text + ":" + statement.TargetType, declaration,
+				AccessModifier.Public, Array.Empty<MethodModifier>());
+
+			semanticModel.EnterScope(statement);
+			statement.Body.AcceptVisitor(this);
+			semanticModel.ExitScope();
+		}
+		catch (Exception e)
+		{
+			Diagnostics.ReportTypeCollectorException(statement.CastTypeToken, e.Message);
+		}
+	}
+
 	public void VisitDestructorStatement(Statement.Destructor statement)
 	{
 		try

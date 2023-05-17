@@ -116,6 +116,7 @@ public enum SyntaxTokenType
 	Template,
 	Lock,
 	Import,
+	Export,
 	Module,
 	Entry,
 	Final,
@@ -149,6 +150,8 @@ public enum SyntaxTokenType
 	Set,
 	Event,
 	Ref,
+	Implicit,
+	Explicit,
 
 	// Built-in types
 	Int8,
@@ -213,6 +216,9 @@ public sealed class SyntaxToken
 			"template"    => SyntaxTokenType.Template,
 			"lock"        => SyntaxTokenType.Lock,
 			"import"      => SyntaxTokenType.Import,
+			"export"      => SyntaxTokenType.Export,
+			"implicit"    => SyntaxTokenType.Implicit,
+			"explicit"    => SyntaxTokenType.Explicit,
 			"module"      => SyntaxTokenType.Module,
 			"entry"       => SyntaxTokenType.Entry,
 			"final"       => SyntaxTokenType.Final,
@@ -244,8 +250,8 @@ public sealed class SyntaxToken
 			"break"       => SyntaxTokenType.Break,
 			"get"         => SyntaxTokenType.Get,
 			"set"         => SyntaxTokenType.Set,
-			"event"		  => SyntaxTokenType.Event,
-			"ref"		  => SyntaxTokenType.Ref,
+			"event"       => SyntaxTokenType.Event,
+			"ref"         => SyntaxTokenType.Ref,
 			
 			"int8"   => SyntaxTokenType.Int8,
 			"uint8"  => SyntaxTokenType.UInt8,

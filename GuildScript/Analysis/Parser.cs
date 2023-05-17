@@ -364,7 +364,7 @@ public sealed class Parser
 
 	private Statement.Throw ParseThrowStatement()
 	{
-		Consume(SyntaxTokenType.Return);
+		Consume(SyntaxTokenType.Throw);
 
 		Expression? expression = null;
 		if (!Check(SyntaxTokenType.Semicolon))
@@ -1021,6 +1021,11 @@ public sealed class Parser
 
 	private Statement ParseMember()
 	{
+		if (Match(out var castTypeToken, SyntaxTokenType.Implicit, SyntaxTokenType.Explicit))
+		{
+			return ParseCastOverload(castTypeToken);
+		}
+		
 		if (Match(out var destructorToken, SyntaxTokenType.Destructor))
 		{
 			return ParseDestructor(destructorToken);
@@ -1107,6 +1112,18 @@ public sealed class Parser
 		}
 
 		throw Error("Expected interface member.");
+	}
+
+	private Statement.CastOverload ParseCastOverload(SyntaxToken castTypeToken)
+	{
+		var targetType = ParseType();
+		if (targetType is null)
+			throw Error("Expected target type.");
+		
+		Consume(SyntaxTokenType.OpenParen);
+		Consume(SyntaxTokenType.CloseParen);
+		var body = ParseBlock();
+		return new Statement.CastOverload(castTypeToken, targetType, body);
 	}
 
 	private Statement.Destructor ParseDestructor(SyntaxToken destructorToken)

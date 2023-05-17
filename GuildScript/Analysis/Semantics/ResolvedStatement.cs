@@ -16,6 +16,7 @@ public abstract class ResolvedStatement : ResolvedNode
 		void VisitStructStatement(Struct statement);
 		void VisitInterfaceStatement(Interface statement);
 		void VisitEnumStatement(Enum statement);
+		void VisitCastOverloadStatement(CastOverload statement);
 		void VisitDestructorStatement(Destructor statement);
 		void VisitExternalMethodStatement(ExternalMethod statement);
 		void VisitConstructorStatement(Constructor statement);
@@ -225,6 +226,25 @@ public abstract class ResolvedStatement : ResolvedNode
 		public override void AcceptVisitor(IVisitor visitor)
 		{
 			visitor.VisitEnumStatement(this);
+		}
+	}
+
+	public sealed class CastOverload : ResolvedStatement
+	{
+		public MethodSymbol MethodSymbol { get; }
+		public ResolvedStatement Body { get; }
+		public CastOverloadType OverloadType { get; }
+		
+		public CastOverload(MethodSymbol methodSymbol, ResolvedStatement body, CastOverloadType overloadType)
+		{
+			MethodSymbol = methodSymbol;
+			Body = body;
+			OverloadType = overloadType;
+		}
+		
+		public override void AcceptVisitor(IVisitor visitor)
+		{
+			visitor.VisitCastOverloadStatement(this);
 		}
 	}
 
