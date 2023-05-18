@@ -48,7 +48,7 @@ public struct Vector2
         return a + b;
     }
     
-    // Implicit cast overload from Vector2 to single (for example, based on vector magnitude)
+    // Implicit cast overload from Vector2 to double (for example, based on vector magnitude)
     implicit double()
     {
         return Math.Sqrt(x * x + y * y);
