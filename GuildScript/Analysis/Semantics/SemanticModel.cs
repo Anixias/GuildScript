@@ -422,7 +422,10 @@ public sealed class SemanticModel
 		if (CurrentSymbol?.GetChild(name) is { } symbol)
 			return symbol;
 
-		return CurrentScope?.FindSymbol(name);
+		if (CurrentScope?.FindSymbol(name) is { } scopeSymbol)
+			return scopeSymbol;
+		
+		return null;
 	}
 
 	public MethodSymbol GetEntryPoint()

@@ -1556,7 +1556,7 @@ public sealed class Parser
 
 	private Expression ParseRangeExpression()
 	{
-		var left = ParseConditionalExpression();
+		var left = ParseCastExpression();
 
 		if (!Match(out var operatorToken, SyntaxTokenType.LeftArrow, SyntaxTokenType.RightArrow,
 				SyntaxTokenType.LeftArrowArrow, SyntaxTokenType.RightArrowArrow))
@@ -1566,15 +1566,46 @@ public sealed class Parser
 		return new Expression.Binary(left, new BinaryOperator(operatorToken), right);
 	}
 
+	private Expression ParseCastExpression()
+	{
+		var expression = ParseConditionalExpression();
+
+		while (true)
+		{
+			if (Match(SyntaxTokenType.Colon))
+			{
+				var targetType = ParseType();
+				if (targetType is null)
+					throw Error("Cannot cast to void.");
+
+				expression = new Expression.Cast(expression, targetType, false);
+			}
+			else if (Match(SyntaxTokenType.QuestionColon))
+			{
+				var targetType = ParseType();
+				if (targetType is null)
+					throw Error("Cannot cast to void.");
+
+				expression = new Expression.Cast(expression, targetType, true);
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		return expression;
+	}
+
 	private Expression ParseConditionalExpression()
 	{
 		var condition = ParseLogicalOrExpression();
 		if (!Match(SyntaxTokenType.Question))
 			return condition;
 
-		var trueExpression = ParseExpression();
+		var trueExpression = ParseConditionalExpression();
 		Consume(SyntaxTokenType.Colon);
-		var falseExpression = ParseExpression();
+		var falseExpression = ParseConditionalExpression();
 
 		return new Expression.Conditional(condition, trueExpression, falseExpression);
 	}
@@ -1913,22 +1944,6 @@ public sealed class Parser
 				var accessIdentifier = new Expression.Identifier(Consume(SyntaxTokenType.Identifier));
 				primary = new Expression.Binary(primary, new BinaryOperator(questionDotToken), accessIdentifier);
 			}
-			else if (Match(SyntaxTokenType.Colon))
-			{
-				var targetType = ParseType();
-				if (targetType is null)
-					throw Error("Cannot cast to void.");
-				
-				primary = new Expression.Cast(primary, targetType, false);
-			}
-			else if (Match(SyntaxTokenType.QuestionColon))
-			{
-				var targetType = ParseType();
-				if (targetType is null)
-					throw Error("Cannot cast to void.");
-				
-				primary = new Expression.Cast(primary, targetType, true);
-			}
 			else if (Match(SyntaxTokenType.OpenSquare))
 			{
 				var key = ParseExpression();
@@ -2038,6 +2053,7 @@ public sealed class Parser
 		try
 		{
 			suppressErrors = true;
+			
 			if (Match(SyntaxTokenType.LeftAngled))
 			{
 				do

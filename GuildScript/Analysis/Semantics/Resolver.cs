@@ -5,6 +5,16 @@ namespace GuildScript.Analysis.Semantics;
 
 public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression.IVisitor<ResolvedExpression>
 {
+	private enum ResolutionStage
+	{
+		Begin,
+		Signatures = Begin,
+		Bodies,
+		Complete
+	}
+
+	private ResolutionStage stage = ResolutionStage.Begin;
+
 	private readonly SemanticModel semanticModel;
 	private readonly Dictionary<TypeSymbol, SimpleResolvedType> typeSymbolLookup = new();
 
@@ -17,7 +27,17 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 	{
 		try
 		{
-			var resolvedRoot = Resolve(tree.Root);
+			stage = ResolutionStage.Begin;
+			ResolvedNode? resolvedRoot = null;
+			while (stage < ResolutionStage.Complete)
+			{
+				resolvedRoot = Resolve(tree.Root);
+				stage++;
+			}
+
+			if (resolvedRoot is null)
+				throw new Exception("Failed to resolve tree.");
+			
 			return new ResolvedTree(resolvedRoot);
 		}
 		catch (Exception e)
@@ -117,7 +137,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		switch (typeSyntax)
 		{
 			case BaseTypeSyntax baseTypeSyntax:
-				var nativeResolvedType = SimpleResolvedType.FindNativeType(baseTypeSyntax.ToString());
+				var nativeResolvedType = SimpleResolvedType.FindNativeType(baseTypeSyntax.TokenType);
 				if (nativeResolvedType is null)
 					throw new Exception($"The native type '{baseTypeSyntax}' could not be resolved.");
 
@@ -261,7 +281,8 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 		{
 			case Expression.Qualifier qualifier:
 			{
-				var symbol = semanticModel.FindSymbol(qualifier.NameToken.Text);
+				var symbol = semanticModel.FindSymbol(qualifier.NameToken.Text) ??
+							 SimpleResolvedType.FindNativeType(qualifier.NameToken.Type)?.TypeSymbol;
 
 				if (symbol is null)
 					throw new Exception($"The symbol '{qualifier.NameToken.Text}' does not exist in this context.");
@@ -1459,6 +1480,7 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 	public ResolvedExpression VisitCallExpression(Expression.Call expression)
 	{
 		var sourceSymbol = ResolveExpressionValueSymbol(expression.Function);
+		
 		if (sourceSymbol is not ICallable callable)
 			throw new Exception("Invalid call target.");
 
@@ -1587,12 +1609,12 @@ public sealed class Resolver : Statement.IVisitor<ResolvedStatement>, Expression
 
 	public ResolvedExpression VisitCastExpression(Expression.Cast expression)
 	{
-		var resolvedExpression = expression.AcceptVisitor(this);
+		var resolvedExpression = expression.Expression.AcceptVisitor(this);
 		var resolvedType = ResolveType(expression.TargetType);
 		if (resolvedType is null)
 			throw new Exception($"Failed to resolve type '{expression.TargetType}'.");
 
-		return new ResolvedExpression.Cast(resolvedExpression, resolvedType, expression.IsConditional);
+		return new ResolvedExpression.Cast(resolvedExpression, resolvedType, expression.IsConditional, null);
 	}
 
 	public ResolvedExpression VisitIndexExpression(Expression.Index expression)

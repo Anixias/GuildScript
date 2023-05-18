@@ -294,12 +294,14 @@ public abstract class ResolvedExpression : ResolvedNode
 		public ResolvedExpression Expression { get; }
 		public ResolvedType TargetType { get; }
 		public bool IsConditional { get; }
+		public MethodSymbol? CastMethod { get; }
 
-		public Cast(ResolvedExpression expression, ResolvedType targetType, bool isConditional)
+		public Cast(ResolvedExpression expression, ResolvedType targetType, bool isConditional, MethodSymbol? castMethod)
 		{
 			Expression = expression;
 			TargetType = targetType;
 			IsConditional = isConditional;
+			CastMethod = castMethod;
 
 			if (IsConditional && TargetType is not NullableResolvedType)
 			{

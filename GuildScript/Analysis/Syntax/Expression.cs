@@ -263,7 +263,7 @@ public abstract class Expression : SyntaxNode
 		public Expression Function { get; }
 		public ImmutableArray<Expression> TemplateArguments { get; }
 		public ImmutableArray<Expression> Arguments { get; }
-		
+
 		public Call(Expression function, IEnumerable<Expression> templateArguments, IEnumerable<Expression> arguments)
 		{
 			Function = function;

@@ -168,25 +168,25 @@ public sealed class SimpleResolvedType : ResolvedType
 	public static readonly SimpleResolvedType Method = new(NativeTypeSymbol.Method);
 	public static readonly SimpleResolvedType Event = new(NativeTypeSymbol.Event);
 
-	private static readonly Dictionary<string, SimpleResolvedType> NativeTypes = new()
+	private static readonly Dictionary<Syntax.SyntaxTokenType, SimpleResolvedType> NativeTypes = new()
 	{
-		{ Syntax.SyntaxTokenType.Int8.ToString(), Int8 },
-		{ Syntax.SyntaxTokenType.UInt8.ToString(), UInt8 },
-		{ Syntax.SyntaxTokenType.Int16.ToString(), Int16 },
-		{ Syntax.SyntaxTokenType.UInt16.ToString(), UInt16 },
-		{ Syntax.SyntaxTokenType.Int32.ToString(), Int32 },
-		{ Syntax.SyntaxTokenType.UInt32.ToString(), UInt32 },
-		{ Syntax.SyntaxTokenType.Int64.ToString(), Int64 },
-		{ Syntax.SyntaxTokenType.UInt64.ToString(), UInt64 },
-		{ Syntax.SyntaxTokenType.Single.ToString(), Single },
-		{ Syntax.SyntaxTokenType.Double.ToString(), Double },
-		{ Syntax.SyntaxTokenType.Char.ToString(), Char },
-		{ Syntax.SyntaxTokenType.Bool.ToString(), Bool },
-		{ Syntax.SyntaxTokenType.Object.ToString(), Object },
-		{ Syntax.SyntaxTokenType.String.ToString(), String }
+		{ Syntax.SyntaxTokenType.Int8, Int8 },
+		{ Syntax.SyntaxTokenType.UInt8, UInt8 },
+		{ Syntax.SyntaxTokenType.Int16, Int16 },
+		{ Syntax.SyntaxTokenType.UInt16, UInt16 },
+		{ Syntax.SyntaxTokenType.Int32, Int32 },
+		{ Syntax.SyntaxTokenType.UInt32, UInt32 },
+		{ Syntax.SyntaxTokenType.Int64, Int64 },
+		{ Syntax.SyntaxTokenType.UInt64, UInt64 },
+		{ Syntax.SyntaxTokenType.Single, Single },
+		{ Syntax.SyntaxTokenType.Double, Double },
+		{ Syntax.SyntaxTokenType.Char, Char },
+		{ Syntax.SyntaxTokenType.Bool, Bool },
+		{ Syntax.SyntaxTokenType.Object, Object },
+		{ Syntax.SyntaxTokenType.String, String }
 	};
 
-	public static ResolvedType? FindNativeType(string token)
+	public static ResolvedType? FindNativeType(Syntax.SyntaxTokenType token)
 	{
 		return NativeTypes.TryGetValue(token, out var type) ? type : null;
 	}

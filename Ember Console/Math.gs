@@ -4,7 +4,7 @@ public global class Math
 {
 	public global double Abs(double number)
 	{
-		return number < 0.0 ? (-number) : number;
+		return number < 0.0 ? -number : number;
 	}
 	
 	public global double Sqrt(double number)
@@ -49,7 +49,7 @@ public struct Vector2
     }
     
     // Implicit cast overload from Vector2 to single (for example, based on vector magnitude)
-    implicit single()
+    implicit double()
     {
         return Math.Sqrt(x * x + y * y);
     }
@@ -58,5 +58,10 @@ public struct Vector2
     explicit bool()
     {
         return x != 0 || y != 0;
+    }
+    
+    private single Test2(Vector2 a)
+    {
+        return a.x:single;
     }
 }
