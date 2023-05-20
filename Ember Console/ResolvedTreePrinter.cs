@@ -1010,7 +1010,7 @@ public class ResolvedTreePrinter : ResolvedStatement.IVisitor, ResolvedExpressio
 		
 		PushIndent();
 		IsLastChild = true;
-		Print(statement.IfStatement);
+		Print(statement.ThenStatement);
 		PopIndent();
 
 		if (statement.ElseStatement is not null)

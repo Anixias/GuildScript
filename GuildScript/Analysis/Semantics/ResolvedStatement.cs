@@ -603,13 +603,13 @@ public abstract class ResolvedStatement : ResolvedNode
 	public sealed class Control : ResolvedStatement
 	{
 		public ResolvedExpression IfExpression { get; }
-		public ResolvedStatement IfStatement { get; }
+		public ResolvedStatement ThenStatement { get; }
 		public ResolvedStatement? ElseStatement { get; }
 		
-		public Control(ResolvedExpression ifExpression, ResolvedStatement ifStatement, ResolvedStatement? elseStatement)
+		public Control(ResolvedExpression ifExpression, ResolvedStatement thenStatement, ResolvedStatement? elseStatement)
 		{
 			IfExpression = ifExpression;
-			IfStatement = ifStatement;
+			ThenStatement = thenStatement;
 			ElseStatement = elseStatement;
 		}
 		

@@ -2,6 +2,7 @@
 using GuildScript;
 using GuildScript.Analysis;
 using GuildScript.Analysis.Semantics;
+using GuildScript.Analysis.Semantics.ControlFlow;
 using GuildScript.Analysis.Syntax;
 using GuildScript.Analysis.Text;
 
@@ -198,6 +199,9 @@ void CompileFolder()
 	{
 		var treePrinter = new ResolvedTreePrinter(Console.Out);
 		treePrinter.PrintTree(resolvedTree);
+
+		var cfgAnalyzer = new ControlFlowAnalyzer();
+		cfgAnalyzer.Analyze(resolvedTree);
 	}
 }
 

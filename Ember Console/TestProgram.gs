@@ -34,7 +34,22 @@ class Player
 	}
 }
 
-entry int Main()
+entry int32 Main()
+{
+	if (true)
+		return 1i32;
+	else
+	{
+		var x = 2;
+		
+		if (x > 3)
+			return 3i32;
+	}
+	
+	return 0i32;
+}
+
+/*entry int Main()
 {
 	// Create rooms
 	var room1 = new Room
@@ -102,4 +117,4 @@ entry int Main()
 	}
 
 	return 0i32;
-}
+}*/
